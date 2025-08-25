@@ -83,38 +83,42 @@ export default function Home() {
           <motion.div 
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            className="bg-white border-8 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] p-8 max-w-md w-full"
+            className="bg-white border-8 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] max-w-md w-full mx-4"
             onClick={(e) => e.stopPropagation()}
           >
-            <h2 className="text-2xl font-black mb-4 text-center text-black">
-              Session créée !
-            </h2>
+            {/* Header */}
+            <div className="bg-yellow-300 border-b-8 border-black p-4 flex items-center justify-between">
+              <div className="w-8"></div> {/* Spacer */}
+              <h2 className="text-xl md:text-2xl font-black text-center text-black">
+                🎉 Session créée !
+              </h2>
+              <button 
+                onClick={() => setShowModal(false)}
+                className="bg-red-500 text-white border-4 border-black font-black w-8 h-8 flex items-center justify-center shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 transition-all"
+              >
+                ✕
+              </button>
+            </div>
             
-            <div className="space-y-4">
-              <div className="bg-gray-100 border-2 border-black p-3 font-mono text-sm break-all  text-black">
+            {/* Content */}
+            <div className="p-4 md:p-6 space-y-4">
+              <div className="bg-gray-100 border-4 border-black p-3 font-mono text-sm break-all text-black">
                 {roomUrl}
               </div>
               
-              <div className="grid grid-cols-2 gap-3">
+              <div className="flex flex-col sm:flex-row gap-3">
                 <button 
                   onClick={handleCopy} 
-                  className={`border-4 border-black font-black text-xl py-4 w-full shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all flex items-center justify-center gap-2 ${isCopied ? 'bg-green-400' : 'bg-blue-500 text-white'}`}>
+                  className={`border-4 border-black font-black text-lg md:text-xl py-3 md:py-4 flex-1 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all flex items-center justify-center gap-2 ${isCopied ? 'bg-green-400 text-black' : 'bg-blue-500 text-white'}`}>
                   {isCopied ? '✅ Copié !' : '📋 Copier'}
                 </button>
                 <button
                   onClick={() => window.open(roomUrl, '_blank')}
-                  className="bg-green-400 border-3 border-black text-black font-bold py-3 px-4 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
+                  className="bg-green-400 border-4 border-black text-black font-black text-lg md:text-xl py-3 md:py-4 flex-1 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all"
                 >
-                  Rejoindre
+                  🚀 Rejoindre
                 </button>
               </div>
-              
-              <button
-                onClick={() => setShowModal(false)}
-                className="w-full bg-red-400 border-3 border-black text-black font-bold py-2 px-4 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
-              >
-                ✕ Fermer
-              </button>
             </div>
           </motion.div>
         </motion.div>
