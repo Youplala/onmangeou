@@ -1,8 +1,9 @@
 [build]
 builder = "nixpacks"
+buildCommand = "pnpm run server:build"
 
 [deploy]
-startCommand = "pnpm run server:build && pnpm run server:prod"
+startCommand = "pnpm run server:prod"
 restartPolicyType = "always"
 
 [[services]]
