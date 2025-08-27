@@ -168,22 +168,40 @@ export default function RoomPage() {
       socket.emit('join-room', { roomId: params.roomId, userName: storedName });
     }
 
-
-
-    socket.on('chat-history', (history: ChatMessage[]) => {
-      setMessages(history);
-    });
-
-    socket.on('update-user-list', (userList: User[]) => {
-      setUsers(userList);
-      const me = userList.find(u => u.name === localStorage.getItem('userName'));
-      if (me) {
-        setCurrentUser(me);
+    socket.on('room-state', ({ users, chatHistory, leaderboard }) => {
+      setUsers(users);
+      setMessages(chatHistory);
+      setLeaderboard(leaderboard);
+      const currentUserData = users.find((u: User) => u.name === storedName);
+      if (currentUserData) {
+        setCurrentUser(currentUserData);
       }
     });
-    
-    socket.on('chat-message', (message: ChatMessage) => {
-      setMessages((prev) => [...prev, message]);
+
+    socket.on('user-joined', (userList: User[]) => {
+      setUsers(userList);
+      const currentUserData = userList.find((u: User) => u.name === storedName);
+      if (currentUserData) {
+        setCurrentUser(currentUserData);
+      }
+    });
+
+    socket.on('user-update', (userList: User[]) => {
+      setUsers(userList);
+      const currentUserData = userList.find((u: User) => u.name === storedName);
+      if (currentUserData) {
+        setCurrentUser(currentUserData);
+      }
+    });
+
+    socket.on('new-message', (message: ChatMessage) => {
+      setMessages(prev => {
+        const updated = [...prev, message];
+        if (updated.length > 100) {
+          return updated.slice(-50);
+        }
+        return updated;
+      });
       if (!showChatRef.current && message.type !== 'vote') {
         setUnreadCount((c) => Math.min(99, c + 1));
       }
@@ -194,7 +212,7 @@ export default function RoomPage() {
       }
     });
 
-    socket.on('update-leaderboard', (newLeaderboard: Leaderboard) => {
+    socket.on('leaderboard-update', (newLeaderboard: Leaderboard) => {
       setLeaderboard(newLeaderboard);
     });
 
@@ -261,7 +279,7 @@ export default function RoomPage() {
         text: newMessage.trim(),
         type: 'chat',
       };
-      socketRef.current.emit('chat-message', { roomId: params.roomId, message });
+      socketRef.current.emit('send-message', { roomId: params.roomId, userName, message: newMessage.trim() });
       setNewMessage('');
     }
   };
