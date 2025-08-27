@@ -170,11 +170,27 @@ export default function RoomPage() {
 
 
 
-    socket.on('chat-history', (history: ChatMessage[]) => {
-      setMessages(history);
+    // Handle initial room state
+    socket.on('room-state', ({ users, chatHistory, leaderboard }) => {
+      setUsers(users);
+      setMessages(chatHistory);
+      setLeaderboard(leaderboard);
+      const me = users.find((u: User) => u.name === localStorage.getItem('userName'));
+      if (me) {
+        setCurrentUser(me);
+      }
     });
 
-    socket.on('update-user-list', (userList: User[]) => {
+    // Handle user updates
+    socket.on('user-joined', (userList: User[]) => {
+      setUsers(userList);
+      const me = userList.find(u => u.name === localStorage.getItem('userName'));
+      if (me) {
+        setCurrentUser(me);
+      }
+    });
+
+    socket.on('user-update', (userList: User[]) => {
       setUsers(userList);
       const me = userList.find(u => u.name === localStorage.getItem('userName'));
       if (me) {
@@ -182,7 +198,7 @@ export default function RoomPage() {
       }
     });
     
-    socket.on('chat-message', (message: ChatMessage) => {
+    socket.on('new-message', (message: ChatMessage) => {
       setMessages((prev) => [...prev, message]);
       if (!showChatRef.current && message.type !== 'vote') {
         setUnreadCount((c) => Math.min(99, c + 1));
@@ -194,7 +210,7 @@ export default function RoomPage() {
       }
     });
 
-    socket.on('update-leaderboard', (newLeaderboard: Leaderboard) => {
+    socket.on('leaderboard-update', (newLeaderboard: Leaderboard) => {
       setLeaderboard(newLeaderboard);
     });
 
