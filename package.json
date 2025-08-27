@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "concurrently \"next dev --turbopack\" \"pnpm run server\"",
     "server": "ts-node src/server/index.ts",
+    "server:prod": "ts-node src/server/prod.ts",
     "build": "NEXT_FONT_IGNORE_FETCH_ERRORS=1 next build",
     "start": "next start",
     "lint": "biome check",

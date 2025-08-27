@@ -1,0 +1,9 @@
+[build]
+builder = "nixpacks"
+
+[deploy]
+startCommand = "pnpm run server:prod"
+restartPolicyType = "always"
+
+[[services]]
+name = "socket-server"

@@ -1,0 +1,9 @@
+{
+    "restaurant_name": "Le Petit Rétro",
+    "description_fr": "Le Petit Rétro est un bistrot historique du 16ᵉ, fondé en 1904 et décoré d’Art Nouveau, qui propose depuis 2022 une carte bistronomique signée Irwin Durand sous l’égide de Guy Savoy.",
+    "cuisine_type": "Traditional French",
+    "veggie_friendly": "false",
+    "latitude": "48.8698",
+    "longitude": "2.288",
+    "address": "5 Rue Mesnil, 75116 Paris, France"
+}
