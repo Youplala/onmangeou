@@ -4,6 +4,7 @@ interface User {
   color: string;
   restaurantIndex: number;
   online: boolean;
+  hasOptedOut?: boolean;
 }
 
 interface PlayersListProps {
@@ -32,6 +33,11 @@ export default function PlayersList({ users, mockRestaurantsLength }: PlayersLis
                 <span className={`text-[11px] px-2 py-0.5 rounded-full font-semibold ring-1 ring-black/10 ${user.online ? 'bg-emerald-100/80 text-emerald-800' : 'bg-gray-100/80 text-gray-700'}`}>
                   {user.online ? '🟢 En ligne' : '⚪ Absent'}
                 </span>
+                {user.hasOptedOut && (
+                  <span className="text-[11px] px-2 py-0.5 rounded-full font-semibold ring-1 ring-black/10 bg-rose-100/80 text-rose-800">
+                    🚫 Pas dispo
+                  </span>
+                )}
                 <span className="text-[11px] text-gray-600">
                   {user.restaurantIndex}/{mockRestaurantsLength}
                 </span>

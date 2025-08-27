@@ -35,6 +35,7 @@ interface User {
   color: string;
   restaurantIndex: number;
   online: boolean;
+  hasOptedOut?: boolean;
 }
 
 interface ChatMessage {
@@ -194,6 +195,10 @@ export default function RoomPage() {
       const currentUserData = userList.find((u: User) => u.name === storedName);
       if (currentUserData) {
         setCurrentUser(currentUserData);
+        // Sync the local hasOptedOut state with the server state
+        if (currentUserData.hasOptedOut !== undefined) {
+          setHasOptedOut(currentUserData.hasOptedOut);
+        }
       }
     });
 
@@ -257,6 +262,12 @@ export default function RoomPage() {
   const handleVote = (vote: 'OUI' | 'NON') => {
     if (!userName || !socketRef.current || !currentUser || currentUser.restaurantIndex >= mockRestaurants.length) return;
     
+    // Prevent voting if user has opted out
+    if (hasOptedOut || currentUser.hasOptedOut) {
+      console.log('Cannot vote - user has opted out');
+      return;
+    }
+    
     // Prevent voting after noon in production
     if (process.env.NODE_ENV === 'production') {
       const now = new Date();
@@ -297,7 +308,16 @@ export default function RoomPage() {
         isInviteCopied={isInviteCopied}
         handleInviteCopy={handleInviteCopy}
         hasOptedOut={hasOptedOut}
-        setHasOptedOut={setHasOptedOut}
+        setHasOptedOut={(value) => {
+          setHasOptedOut(value);
+          if (value && socketRef.current && userName) {
+            socketRef.current.emit('user-opt-out', { roomId: params.roomId, userName });
+          }
+          // Also update the current user's hasOptedOut status immediately
+          if (currentUser) {
+            setCurrentUser({ ...currentUser, hasOptedOut: value });
+          }
+        }}
         setIsVotingFinished={setIsVotingFinished}
       />
 
@@ -359,13 +379,20 @@ export default function RoomPage() {
                 })()
               )}
               </AnimatePresence>
-              {!isVotingFinished && currentUser && currentUser.restaurantIndex < mockRestaurants.length && (
+              {!isVotingFinished && currentUser && currentUser.restaurantIndex < mockRestaurants.length && !hasOptedOut && !currentUser.hasOptedOut && (
                 <div className="mt-4 w-full flex justify-center relative z-20">
                   <VotingButtons
                     onVoteYes={() => handleVote('OUI')}
                     onVoteNo={() => handleVote('NON')}
                     isVotingAnimation={isVotingAnimation}
                   />
+                </div>
+              )}
+              {!isVotingFinished && currentUser && currentUser.restaurantIndex < mockRestaurants.length && (hasOptedOut || currentUser.hasOptedOut) && (
+                <div className="mt-4 w-full flex justify-center relative z-20">
+                  <div className="text-center bg-rose-100/80 backdrop-blur rounded-xl ring-1 ring-rose-200 p-4 shadow-sm">
+                    <div className="text-rose-800 font-semibold text-sm">🚫 Vous ne participez plus au vote</div>
+                  </div>
                 </div>
               )}
             </div>
