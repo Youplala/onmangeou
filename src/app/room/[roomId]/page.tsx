@@ -130,11 +130,15 @@ export default function RoomPage() {
     else window.location.href = `/join/${params.roomId}`;
 
     const calculateTimeLeft = () => {
+      // Get current time in Paris timezone
       const now = new Date();
-      const noon = new Date(now);
+      const parisTime = new Date(now.toLocaleString("en-US", { timeZone: "Europe/Paris" }));
+      
+      // Create noon time in Paris timezone
+      const noon = new Date(parisTime);
       noon.setHours(12, 0, 0, 0);
 
-      const diff = noon.getTime() - now.getTime();
+      const diff = noon.getTime() - parisTime.getTime();
       
       if (diff <= 0) {
         return { display: "Le vote est terminé !", isOver: true };

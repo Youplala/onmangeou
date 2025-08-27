@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import BrandPill from "../../../components/BrandPill";
+import GitHubButton from "../../../components/GitHubButton";
 
 export default function JoinRoom() {
   const params = useParams();
@@ -47,6 +48,7 @@ export default function JoinRoom() {
         <div className="p-3 md:p-4">
           <div className="max-w-7xl mx-auto flex items-center justify-between">
             <BrandPill />
+            <GitHubButton />
           </div>
         </div>
       </div>

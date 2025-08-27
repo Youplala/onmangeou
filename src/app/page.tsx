@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { nanoid } from "nanoid";
 import { motion } from "framer-motion";
 import { QRCodeSVG } from "qrcode.react";
+import Image from "next/image";
+import GitHubButton from "../components/GitHubButton";
 
 export default function Home() {
   const [showModal, setShowModal] = useState(false);
@@ -114,7 +116,7 @@ export default function Home() {
   const shareMessage = (url: string) =>
     `On mange où ? Rejoins ma session et vote en 1 min: ${url}`;
 
-  const shareTo = (target: "system" | "whatsapp" | "email") => {
+  const shareTo = (target: "system" | "whatsapp" | "slack") => {
     const url = withUtm(roomUrl, target);
     const text = shareMessage(url);
     if (target === "system" && navigator.share) {
@@ -126,8 +128,9 @@ export default function Home() {
       case "whatsapp":
         open(`https://wa.me/?text=${encodeURIComponent(text)}`);
         break;
-      case "email":
-        window.location.href = `mailto:?subject=${encodeURIComponent("On mange où ?")}&body=${encodeURIComponent(text)}`;
+      case "slack":
+        open(`https://slack.com/intl/en-gb/help/articles/201330736-Add-apps-to-your-Slack-workspace#share-links-in-slack`);
+        // Alternative: open(`slack://open?team=&id=&message=${encodeURIComponent(text)}`);
         break;
       default:
         // Fallback to copy
@@ -154,10 +157,19 @@ export default function Home() {
       {/* Header */}
       <header className="sticky top-0 z-30">
         <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="mx-auto w-fit rounded-full bg-white/60 backdrop-blur px-4 py-2 ring-1 ring-black/10 shadow-sm flex items-center gap-2">
-            <span className="text-lg md:text-xl">🍽️</span>
-            <span className="font-black text-lg md:text-2xl tracking-tight text-black">On mange où ?</span>
-            <span className="ml-1 hidden md:inline-flex items-center rounded-full bg-black text-white text-[10px] px-2 py-0.5 font-bold">v1</span>
+          <div className="flex items-center justify-between">
+            <div className="mx-auto rounded-full bg-white/60 backdrop-blur px-4 py-2 ring-1 ring-black/10 shadow-sm flex items-center gap-2">
+              <Image
+                src="/logo.png"
+                alt="On mange où ? logo"
+                width={24}
+                height={24}
+                className="rounded-full"
+              />
+              <span className="font-black text-lg md:text-2xl tracking-tight text-black">On mange où ?</span>
+              <span className="ml-1 hidden md:inline-flex items-center rounded-full bg-black text-white text-[10px] px-2 py-0.5 font-bold">v1</span>
+            </div>
+            <GitHubButton className="absolute right-4" />
           </div>
         </div>
       </header>
@@ -306,24 +318,30 @@ export default function Home() {
             
             {/* Content */}
             <div className="p-5 md:p-6 space-y-4">
-              <div className="rounded-lg bg-gray-100 ring-1 ring-black/10 p-3 font-mono text-sm break-all text-black">
-                {roomUrl}
+              {/* Explanation text */}
+              <div className="text-center text-gray-600 text-sm">
+                Envoie le lien à la team et mettez tout le monde d'accord
               </div>
 
-              {/* QR Code */}
-              <div className="flex items-center justify-center">
-                <div className="rounded-xl bg-white/80 backdrop-blur ring-1 ring-black/10 p-4 shadow">
-                  <QRCodeSVG value={roomUrl} size={136} bgColor="transparent" fgColor="#0b0b0b" aria-label="QR code de la session"/>
-                  <div className="text-center text-xs font-semibold text-black/70 mt-2">Scanner pour rejoindre</div>
+              {/* URL with inline copy button */}
+              <div className="flex gap-2">
+                <div className="flex-1 rounded-lg bg-gray-100 ring-1 ring-black/10 p-3 font-mono text-sm break-all text-black">
+                  {roomUrl}
                 </div>
+                <button 
+                  onClick={handleCopy} 
+                  className={`rounded-lg px-3 py-2 text-sm font-bold shadow transition-all flex items-center justify-center gap-1 cursor-pointer whitespace-nowrap ${isCopied ? 'bg-emerald-500 text-white' : 'bg-blue-600 text-white hover:bg-blue-700'}`}>
+                  {isCopied ? '✅' : '📋'}
+                  <span className="hidden sm:inline">{isCopied ? 'Copié' : 'Copier'}</span>
+                </button>
               </div>
 
-              {/* One-tap Share Presets */}
-              <div className="grid grid-cols-2 gap-2">
+              {/* Quick Share Options */}
+              <div className="grid grid-cols-2 gap-3">
                 <button
                   aria-label="Partager via WhatsApp"
                   onClick={() => shareTo("whatsapp")}
-                  className="rounded-xl bg-[#25D366] text-white px-3 py-3 text-sm font-bold shadow hover:brightness-95 cursor-pointer flex items-center justify-center gap-2"
+                  className="rounded-xl bg-[#25D366] text-white px-4 py-3 text-sm font-bold shadow hover:brightness-95 cursor-pointer flex items-center justify-center gap-2"
                 >
                   {/* WhatsApp logo */}
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -334,45 +352,25 @@ export default function Home() {
                   WhatsApp
                 </button>
                 <button
-                  aria-label="Partager par email"
-                  onClick={() => shareTo("email")}
-                  className="rounded-xl bg-[#EA4335] text-white px-3 py-3 text-sm font-bold shadow hover:brightness-95 cursor-pointer flex items-center justify-center gap-2"
+                  aria-label="Partager sur Slack"
+                  onClick={() => shareTo("slack")}
+                  className="rounded-xl bg-[#4A154B] text-white px-4 py-3 text-sm font-bold shadow hover:brightness-95 cursor-pointer flex items-center justify-center gap-2"
                 >
-                  {/* Email (envelope) icon */}
+                  {/* Slack logo */}
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                    <path d="M2 5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5Z" fill="currentColor" opacity=".9"/>
-                    <path d="M3 6.5 12 13l9-6.5" stroke="#fff" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M5.042 15.165a2.528 2.528 0 0 1-2.52 2.523A2.528 2.528 0 0 1 0 15.165a2.527 2.527 0 0 1 2.522-2.52h2.52v2.52zM6.313 15.165a2.527 2.527 0 0 1 2.521-2.52 2.527 2.527 0 0 1 2.521 2.52v6.313A2.528 2.528 0 0 1 8.834 24a2.528 2.528 0 0 1-2.521-2.522v-6.313zM8.834 5.042a2.528 2.528 0 0 1-2.521-2.52A2.528 2.528 0 0 1 8.834 0a2.528 2.528 0 0 1 2.521 2.522v2.52H8.834zM8.834 6.313a2.528 2.528 0 0 1 2.521 2.521 2.528 2.528 0 0 1-2.521 2.521H2.522A2.528 2.528 0 0 1 0 8.834a2.528 2.528 0 0 1 2.522-2.521h6.312zM18.956 8.834a2.528 2.528 0 0 1 2.522-2.521A2.528 2.528 0 0 1 24 8.834a2.528 2.528 0 0 1-2.522 2.521h-2.522V8.834zM17.688 8.834a2.528 2.528 0 0 1-2.523 2.521 2.527 2.527 0 0 1-2.52-2.521V2.522A2.527 2.527 0 0 1 15.165 0a2.528 2.528 0 0 1 2.523 2.522v6.312zM15.165 18.956a2.528 2.528 0 0 1 2.523 2.522A2.528 2.528 0 0 1 15.165 24a2.527 2.527 0 0 1-2.52-2.522v-2.522h2.52zM15.165 17.688a2.527 2.527 0 0 1-2.52-2.523 2.526 2.526 0 0 1 2.52-2.52h6.313A2.527 2.527 0 0 1 24 15.165a2.528 2.528 0 0 1-2.522 2.523h-6.313z" fill="currentColor"/>
                   </svg>
-                  Email
+                  Slack
                 </button>
               </div>
-
-              <button
-                onClick={() => shareTo("system")}
-                aria-label="Partager avec les apps de votre appareil"
-                className="w-full rounded-xl bg-black text-white font-bold py-3 shadow hover:bg-black/90 cursor-pointer flex items-center justify-center gap-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
-              >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                  <path d="M12 3v10" stroke="#fff" strokeWidth="2" strokeLinecap="round"/>
-                  <path d="M8 7l4-4 4 4" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <rect x="4" y="11" width="16" height="9" rx="2" stroke="#fff" strokeWidth="2"/>
-                </svg>
-                Partager…
-              </button>
               
-              <div className="flex flex-col sm:flex-row gap-3">
-                <button 
-                  onClick={handleCopy} 
-                  className={`rounded-xl font-bold text-base md:text-lg py-3 md:py-4 flex-1 shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer ${isCopied ? 'bg-emerald-500 text-white' : 'bg-blue-600 text-white hover:bg-blue-700'}`}>
-                  {isCopied ? '✅ Copié !' : '📋 Copier le lien'}
-                </button>
-                <button
-                  onClick={() => window.open(roomUrl, '_blank')}
-                  className="rounded-xl bg-gradient-to-r from-emerald-500 to-green-600 text-white font-bold text-base md:text-lg py-3 md:py-4 flex-1 shadow-lg hover:from-emerald-600 hover:to-green-700 transition-colors cursor-pointer"
-                >
-                  🚀 Rejoindre maintenant
-                </button>
-              </div>
+              {/* Full width join button */}
+              <button
+                onClick={() => window.open(roomUrl, '_blank')}
+                className="w-full rounded-xl bg-gradient-to-r from-emerald-500 to-green-600 text-white font-bold text-lg py-4 shadow-lg hover:from-emerald-600 hover:to-green-700 transition-colors cursor-pointer"
+              >
+                🚀 Rejoindre maintenant
+              </button>
             </div>
           </motion.div>
         </motion.div>
