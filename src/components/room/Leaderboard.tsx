@@ -17,33 +17,38 @@ interface Leaderboard {
 
 interface LeaderboardProps {
   leaderboard: Leaderboard;
+  isHidden: boolean;
 }
 
-export default function Leaderboard({ leaderboard }: LeaderboardProps) {
+export default function Leaderboard({ leaderboard, isHidden }: LeaderboardProps) {
   return (
-    <div className="bg-white border-8 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] p-6 text-black">
-      <h2 className="text-2xl font-black mb-4 text-center">🏆 CLASSEMENT</h2>
-      <div className="space-y-4">
+    <div className="text-black">
+      <h2 className="text-xl font-semibold mb-3 text-center">🏆 Classement</h2>
+      <div className="space-y-3">
         {Object.entries(leaderboard)
           .sort(([, a], [, b]) => b.votes - a.votes)
           .map(([name, { votes, voters }]) => (
             <div key={name}>
-              <div className="flex justify-between items-center font-black text-lg">
-                <span>{name}</span>
-                <span>{votes} VOTE{votes > 1 ? 'S' : ''}</span>
+              <div className="flex justify-between items-center text-sm font-semibold">
+                <span className="truncate">{name}</span>
+                <span className="rounded-full bg-white/70 backdrop-blur ring-1 ring-black/10 px-2.5 py-0.5 text-xs shadow font-bold">
+                  {isHidden ? '?' : votes}
+                </span>
               </div>
-              <div className="flex flex-wrap gap-2 mt-2">
-                {voters.map(v => (
-                  <div 
-                    key={v.id} 
-                    className="w-8 h-8 rounded-full border-2 border-black flex items-center justify-center text-white font-black text-xs"
-                    style={{ backgroundColor: v.color }}
-                    title={v.name}
-                  >
-                    {v.name.substring(0, 1).toUpperCase()}
-                  </div>
-                ))}
-              </div>
+              {!isHidden && (
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  {voters.map(v => (
+                    <div 
+                      key={v.id} 
+                      className="w-7 h-7 rounded-full flex items-center justify-center text-white font-bold text-[10px] shadow ring-2 ring-white/80"
+                      style={{ backgroundColor: v.color }}
+                      title={v.name}
+                    >
+                      {v.name.substring(0, 1).toUpperCase()}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
         ))}
       </div>

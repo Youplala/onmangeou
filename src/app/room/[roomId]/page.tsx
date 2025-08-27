@@ -60,12 +60,13 @@ interface RoomState {
 
 // --- MOCK DATA ---
 const mockRestaurants: Restaurant[] = [
-  { id: '1', name: 'Pizza del Arte', emoji: '🍕', foodType: 'Italian', price: '€€', walkTime: '10 min', description: 'Classic pizzas and pasta.', googleMapsUrl: 'https://goo.gl/maps/pizadelarte', menuUrl: '#' },
-  { id: '2', name: 'Sushi Shop', emoji: '🍣', foodType: 'Japanese', price: '€€€', walkTime: '15 min', description: 'Fresh sushi and sashimi.', googleMapsUrl: 'https://goo.gl/maps/sushishop', menuUrl: '#' },
-  { id: '3', name: 'Le Bagel qui Tue', emoji: '🥯', foodType: 'American', price: '€', walkTime: '5 min', description: 'Gourmet bagels and coffee.', googleMapsUrl: 'https://goo.gl/maps/bagelquitue', menuUrl: '#' },
+  { id: '1', name: 'Pizza Hut', emoji: '🍕', foodType: '🇮🇹', price: '10-15€', walkTime: '5 min', description: 'Pizzas classiques.', googleMapsUrl: 'https://maps.app.goo.gl/HwkNRHfH5taK8E668', menuUrl: 'https://www.pizzahut.fr/huts/fr-1/96-paris-16eme-nord/&utm_source=google&utm_medium=maps&utm_campaign=menu_url?y_source=1_MTEzMzUwMDktNzE1LWxvY2F0aW9uLm1lbnVfdXJs' },
+  { id: '2', name: 'Compose', emoji: '🥗', foodType: '🇫🇷', price: '10-15€', walkTime: '5 min', description: 'Salades sur mesure.', googleMapsUrl: 'https://maps.app.goo.gl/BnCfeAjHxqapsaXZ7', menuUrl: 'https://composeparis.fr/?menu-section' },
+  { id: '3', name: 'Biothentique', emoji: '🍜', foodType: '🇻🇳', price: '10-15€', walkTime: '5 min', description: 'Bobuns, banh mi et plats bio.', googleMapsUrl: 'https://maps.app.goo.gl/LkrWYFesTr5RhTnX6', menuUrl: 'https://biothentique-vietnam.bykomdab.com/?order=true' },
+  { id: '4', name: "Birdy", emoji: '🍔', foodType: '🇺🇸', price: '15-20€', walkTime: '5 min', description: 'Burgers et plates américains.', googleMapsUrl: 'https://maps.app.goo.gl/HHhqd7EshQrTmBi48', menuUrl: 'https://maps.app.goo.gl/HHhqd7EshQrTmBi48' },
 ];
 
-// --- COMPONENT ---
+// --- COMPONENT
 export default function RoomPage() {
   const params = useParams();
   const [userName, setUserName] = useState<string | null>(null);
@@ -88,6 +89,33 @@ export default function RoomPage() {
   const showChatRef = useRef(false);
   const [isVotingAnimation, setIsVotingAnimation] = useState(false);
 
+  // Sound notification function
+  const playNotificationSound = () => {
+    try {
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      // Create a pleasant notification sound (two quick beeps)
+      oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+      oscillator.frequency.setValueAtTime(600, audioContext.currentTime + 0.1);
+      
+      gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+      gainNode.gain.linearRampToValueAtTime(0.1, audioContext.currentTime + 0.01);
+      gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + 0.08);
+      gainNode.gain.linearRampToValueAtTime(0.1, audioContext.currentTime + 0.11);
+      gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + 0.18);
+      
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + 0.2);
+    } catch (error) {
+      console.log('Could not play notification sound:', error);
+    }
+  };
+
   const x = useMotionValue(0);
   const rotate = useTransform(x, [-200, 200], [-30, 30]);
   const overlayGreen = useTransform(x, [0, 60, 200], [0, 0.15, 0.35]);
@@ -107,7 +135,7 @@ export default function RoomPage() {
       noon.setHours(12, 0, 0, 0);
 
       if (now > noon) {
-        return { display: "Le vote est terminé !", isOver: true };
+        return { display: "Le vote est terminé ! Revenez demain !", isOver: true };
       }
 
       let diff = noon.getTime() - now.getTime();
@@ -158,6 +186,11 @@ export default function RoomPage() {
       setMessages((prev) => [...prev, message]);
       if (!showChatRef.current && message.type !== 'vote') {
         setUnreadCount((c) => Math.min(99, c + 1));
+      }
+      
+      // Play notification sound for new chat messages (not vote messages)
+      if (message.type !== 'vote' && message.user !== storedName) {
+        playNotificationSound();
       }
     });
 
@@ -237,7 +270,7 @@ export default function RoomPage() {
 
   // --- RENDER ---
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-400 via-red-400 to-pink-400 font-sans">
+    <div className="min-h-screen bg-gradient-to-br from-orange-300 via-rose-300 to-pink-400 font-sans">
       <RoomHeader
         isHeaderCollapsed={isHeaderCollapsed}
         setIsHeaderCollapsed={setIsHeaderCollapsed}
@@ -249,72 +282,103 @@ export default function RoomPage() {
       />
 
       {/* Main Content */}
-      <main className="p-4 lg:p-8">
+      <main className="p-6 md:p-10">
         <div className="flex flex-col lg:flex-row gap-8 max-w-7xl mx-auto">
 
         {/* Left Panel: Leaderboard & Users */}
-        <div className="lg:w-1/4 order-2 lg:order-1 flex flex-col gap-8">
-          <Leaderboard leaderboard={leaderboard} />
-          <PlayersList users={users} mockRestaurantsLength={mockRestaurants.length} />
+        <div className="lg:w-1/4 order-2 lg:order-1 flex flex-col gap-6">
+          <div className="rounded-2xl bg-white/60 backdrop-blur ring-1 ring-black/10 shadow-xl p-4">
+            <Leaderboard leaderboard={leaderboard} isHidden={!isVotingFinished} />
+          </div>
+          <div className="rounded-2xl bg-white/60 backdrop-blur ring-1 ring-black/10 shadow-xl p-4">
+            <PlayersList users={users} mockRestaurantsLength={mockRestaurants.length} />
+          </div>
         </div>
 
         {/* Center Panel: Swipe Cards */}
-        <div className="lg:w-1/3 order-1 lg:order-2 flex flex-col items-center justify-center">
-          <Timer timeLeft={timeLeft} />
-          <AnimatePresence>
-            {!isVotingFinished && currentUser && currentUser.restaurantIndex < mockRestaurants.length ? (
-              <RestaurantCard
-                restaurant={mockRestaurants[currentUser.restaurantIndex]}
-                isVotingAnimation={isVotingAnimation}
-                playSwipeHint={playSwipeHint}
-                onDragEnd={(e, { offset }) => {
-                  if (offset.x > 100) triggerVoteWithAnimation('OUI');
-                  else if (offset.x < -100) triggerVoteWithAnimation('NON');
-                  else x.set(0);
-                }}
-                x={x}
-                rotate={rotate}
-                overlayGreen={overlayGreen}
-                overlayRed={overlayRed}
-                crossOpacity={crossOpacity}
-                checkOpacity={checkOpacity}
-              />
-            ) : (
-              (() => {
-                const sortedLeaderboard = Object.entries(leaderboard).sort(([, a], [, b]) => b.votes - a.votes);
-                const winnerEntry = sortedLeaderboard.length > 0 ? sortedLeaderboard[0] : null;
-                const winnerRestaurant = winnerEntry ? mockRestaurants.find(r => r.name === winnerEntry[0]) : null;
+        <div className="lg:w-1/3 order-1 lg:order-2">
+          <div className="relative overflow-hidden rounded-3xl bg-white/60 backdrop-blur-xl ring-1 ring-black/10 shadow-2xl p-4 md:p-6">
+            <div className="absolute inset-0 -z-10 opacity-40 bg-[radial-gradient(600px_circle_at_0%_0%,#ffffff40,transparent_40%),radial-gradient(800px_circle_at_100%_0%,#ffffff40,transparent_45%)]" />
+            <div className="flex flex-col items-center">
+              <Timer timeLeft={timeLeft} />
+              <AnimatePresence>
+              {!isVotingFinished && currentUser && currentUser.restaurantIndex < mockRestaurants.length ? (
+                <RestaurantCard
+                  restaurant={mockRestaurants[currentUser.restaurantIndex]}
+                  isVotingAnimation={isVotingAnimation}
+                  playSwipeHint={playSwipeHint}
+                  onDragEnd={(e, { offset }) => {
+                    if (offset.x > 100) triggerVoteWithAnimation('OUI');
+                    else if (offset.x < -100) triggerVoteWithAnimation('NON');
+                    else x.set(0);
+                  }}
+                  x={x}
+                  rotate={rotate}
+                  overlayGreen={overlayGreen}
+                  overlayRed={overlayRed}
+                  crossOpacity={crossOpacity}
+                  checkOpacity={checkOpacity}
+                />
+              ) : (
+                (() => {
+                  // If the vote is not finished yet (e.g., user has swiped all cards but countdown not over),
+                  // do NOT reveal the winner. Show a waiting message instead.
+                  if (!isVotingFinished) {
+                    return (
+                      <div className="text-center bg-white/70 backdrop-blur rounded-2xl ring-1 ring-black/10 p-8 shadow-xl">
+                        <div className="text-2xl md:text-3xl font-extrabold text-black mb-1">En attente des autres votes…</div>
+                        <div className="text-black/70 font-semibold">Le gagnant sera révélé à la fin du compte à rebours.</div>
+                      </div>
+                    );
+                  }
 
-                if (winnerRestaurant) {
-                  return <WinnerCard restaurant={winnerRestaurant} />;
-                }
+                  const sortedLeaderboard = Object.entries(leaderboard).sort(([, a], [, b]) => b.votes - a.votes);
+                  const winnerEntry = sortedLeaderboard.length > 0 ? sortedLeaderboard[0] : null;
+                  const winnerRestaurant = winnerEntry ? mockRestaurants.find(r => r.name === winnerEntry[0]) : null;
 
-                return <div className="text-center font-black text-4xl text-white bg-black p-8 border-8 border-white">C'EST FINI !</div>;
-              })()
-            )}
-          </AnimatePresence>
-          {!isVotingFinished && currentUser && currentUser.restaurantIndex < mockRestaurants.length && (
-            <VotingButtons
-              onVoteYes={() => triggerVoteWithAnimation('OUI')}
-              onVoteNo={() => triggerVoteWithAnimation('NON')}
-              isVotingAnimation={isVotingAnimation}
-            />
-          )}
+                  if (winnerRestaurant) {
+                    return <WinnerCard restaurant={winnerRestaurant} />;
+                  }
+
+                  return (
+                    <div className="text-center font-extrabold text-3xl md:text-4xl text-black bg-white/70 backdrop-blur rounded-2xl ring-1 ring-black/10 p-8 shadow-xl">
+                      C'EST FINI !
+                    </div>
+                  );
+                })()
+              )}
+              </AnimatePresence>
+              {!isVotingFinished && currentUser && currentUser.restaurantIndex < mockRestaurants.length && (
+                <div className="mt-4 w-full flex justify-center">
+                  <VotingButtons
+                    onVoteYes={() => triggerVoteWithAnimation('OUI')}
+                    onVoteNo={() => triggerVoteWithAnimation('NON')}
+                    isVotingAnimation={isVotingAnimation}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
         </div>
 
-        <Chat
-          messages={messages}
-          users={users}
-          newMessage={newMessage}
-          setNewMessage={setNewMessage}
-          onSendMessage={handleSendMessage}
-          showChat={showChat}
-          setShowChat={(value) => {
-            setShowChat(value);
-            if (value) setUnreadCount(0);
-          }}
-          unreadCount={unreadCount}
-        />
+        <div className="lg:w-1/3 order-3 lg:order-3">
+          <div className="relative overflow-hidden rounded-3xl bg-white/60 backdrop-blur-xl ring-1 ring-black/10 shadow-2xl p-4 md:p-6">
+            <div className="absolute inset-0 -z-10 opacity-40 bg-[radial-gradient(600px_circle_at_0%_0%,#ffffff40,transparent_40%),radial-gradient(800px_circle_at_100%_0%,#ffffff40,transparent_45%)]" />
+            <Chat
+              messages={messages}
+              users={users}
+              newMessage={newMessage}
+              setNewMessage={setNewMessage}
+              onSendMessage={handleSendMessage}
+              showChat={showChat}
+              setShowChat={(value) => {
+                setShowChat(value);
+                if (value) setUnreadCount(0);
+              }}
+              unreadCount={unreadCount}
+            />
+          </div>
+        </div>
 
         </div>
       </main>

@@ -46,16 +46,16 @@ export default function RestaurantCard({
       style={{ x, rotate }}
       animate={playSwipeHint ? { x: [0, 35, -35, 0] } : undefined}
       transition={playSwipeHint ? { duration: 1.2, ease: 'easeInOut' } : undefined}
-      className="relative bg-white border-8 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] p-8 w-full max-w-sm text-black cursor-grab active:cursor-grabbing"
+      className="relative overflow-hidden rounded-3xl bg-white/70 backdrop-blur-xl ring-1 ring-black/10 shadow-2xl p-6 w-full max-w-sm text-black cursor-grab active:cursor-grabbing"
     >
       {/* Color overlays for swipe feedback */}
       <motion.div
         className="absolute inset-0 z-20 pointer-events-none"
-        style={{ backgroundColor: 'rgba(34,197,94,0.35)', opacity: overlayGreen }}
+        style={{ backgroundColor: 'rgba(34,197,94,0.28)', opacity: overlayGreen }}
       />
       <motion.div
         className="absolute inset-0 z-20 pointer-events-none"
-        style={{ backgroundColor: 'rgba(239,68,68,0.35)', opacity: overlayRed }}
+        style={{ backgroundColor: 'rgba(239,68,68,0.28)', opacity: overlayRed }}
       />
       {/* Red cross for NO swipe */}
       <motion.div className="absolute inset-0 z-30 flex items-center justify-center pointer-events-none"
@@ -70,22 +70,26 @@ export default function RestaurantCard({
         <span className="text-8xl select-none">✅</span>
       </motion.div>
       {playSwipeHint && (
-        <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-black text-white border-4 border-white px-2 py-1 text-xs font-black rounded-full select-none">
-          Glisse ← →
+        <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-white/80 backdrop-blur text-gray-800 ring-1 ring-black/10 px-3 py-1 text-xs font-semibold rounded-full select-none shadow">
+          Glisse ← → pour voter
         </div>
       )}
       <div className="relative z-10 text-center pointer-events-none">
         <span className="text-6xl" role="img">{restaurant.emoji}</span>
-        <h3 className="text-3xl font-black my-4">{restaurant.name}</h3>
-        <p className="text-lg font-bold text-gray-500 mb-4">{restaurant.foodType}</p>
+        <h3 className="text-3xl font-extrabold my-3">{restaurant.name}</h3>
+        <p className="text-lg font-semibold text-gray-600 mb-4">{restaurant.foodType}</p>
         <div className="flex justify-center gap-4 mb-4">
-          <span className="bg-green-200 border-2 border-black px-3 py-1 font-bold text-sm">{restaurant.price}</span>
-          <span className="bg-yellow-200 border-2 border-black px-3 py-1 font-bold text-sm">🚶 {restaurant.walkTime}</span>
+          <span className="bg-emerald-100/80 text-emerald-800 rounded-full px-3 py-1 font-semibold text-sm ring-1 ring-emerald-700/20">{restaurant.price}</span>
+          <span className="bg-amber-100/80 text-amber-800 rounded-full px-3 py-1 font-semibold text-sm ring-1 ring-amber-700/20">🚶 {restaurant.walkTime}</span>
         </div>
-        <p className="text-base font-bold text-gray-700 mb-6">{restaurant.description}</p>
+        <p className="text-base font-medium text-gray-700 mb-6">{restaurant.description}</p>
         <div className="flex justify-center gap-4 font-bold">
-          <a href={restaurant.googleMapsUrl} target="_blank" rel="noopener noreferrer" className="bg-white border-2 border-black px-4 py-2 hover:bg-gray-100 transition-colors">📍 Maps</a>
-          <a href={restaurant.menuUrl} target="_blank" rel="noopener noreferrer" className="bg-white border-2 border-black px-4 py-2 hover:bg-gray-100 transition-colors">📖 Menu</a>
+          <a href={restaurant.googleMapsUrl} target="_blank" rel="noopener noreferrer" className="rounded-xl bg-white/70 backdrop-blur ring-1 ring-black/10 px-4 py-2 hover:bg-white transition-colors cursor-pointer shadow">
+            📍 Ouvrir l’itinéraire
+          </a>
+          <a href={restaurant.menuUrl} target="_blank" rel="noopener noreferrer" className="rounded-xl bg-white/70 backdrop-blur ring-1 ring-black/10 px-4 py-2 hover:bg-white transition-colors cursor-pointer shadow">
+            📖 Voir le menu
+          </a>
         </div>
       </div>
     </motion.div>

@@ -4,8 +4,12 @@ interface TimerProps {
 
 export default function Timer({ timeLeft }: TimerProps) {
   return (
-    <div className="bg-yellow-300 border-4 border-black px-6 py-4 font-black text-xl md:text-2xl text-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] mb-6 w-full max-w-sm text-black">
-      {timeLeft ? timeLeft : "Chargement..."}
+    <div className="mb-6 w-full max-w-sm mx-auto">
+      <div className="rounded-2xl bg-white/70 backdrop-blur ring-1 ring-black/10 px-6 py-3 text-center shadow">
+        <span className="text-lg md:text-xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-rose-600 to-pink-600">
+          {timeLeft ? timeLeft : 'Chargement...'}
+        </span>
+      </div>
     </div>
   );
 }
