@@ -13,6 +13,7 @@
     "format": "biome format --write"
   },
   "dependencies": {
+    "@vercel/analytics": "^1.5.0",
     "framer-motion": "^12.23.12",
     "nanoid": "^5.1.5",
     "next": "15.5.0",
