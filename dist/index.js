@@ -19,81 +19,93 @@ io.on('connection', (socket) => {
         socket.join(roomId);
         console.log(`${userName} joined room ${roomId}`);
         if (!rooms[roomId]) {
-            rooms[roomId] = { users: [], chatHistory: [], leaderboard: {} };
+            rooms[roomId] = {
+                users: [],
+                chatHistory: [],
+                leaderboard: {}
+            };
         }
-        let user = rooms[roomId].users.find(u => u.name === userName);
-        if (user) {
-            // User is reconnecting, update socket ID and set online
-            user.id = socket.id;
-            user.online = true;
+        const existingUser = rooms[roomId].users.find(u => u.name === userName);
+        if (existingUser) {
+            existingUser.online = true;
+            existingUser.id = socket.id;
         }
         else {
-            // New user, assign color and initialize
-            const assignedColors = rooms[roomId].users.map(u => u.color);
-            const availableColor = userColors.find(c => !assignedColors.includes(c)) || userColors[0];
-            user = {
+            const newUser = {
                 id: socket.id,
                 name: userName,
-                color: availableColor,
+                color: userColors[rooms[roomId].users.length % userColors.length],
                 restaurantIndex: 0,
-                online: true,
+                online: true
             };
-            rooms[roomId].users.push(user);
+            rooms[roomId].users.push(newUser);
         }
-        // Send history and state to the connecting client
-        socket.emit('chat-history', rooms[roomId].chatHistory);
-        socket.emit('update-leaderboard', rooms[roomId].leaderboard);
-        // Update everyone's user list
-        io.to(roomId).emit('update-user-list', rooms[roomId].users);
+        socket.emit('room-state', {
+            users: rooms[roomId].users,
+            chatHistory: rooms[roomId].chatHistory,
+            leaderboard: rooms[roomId].leaderboard
+        });
+        socket.to(roomId).emit('user-joined', rooms[roomId].users);
     });
-    socket.on('chat-message', ({ roomId, message }) => {
-        const room = rooms[roomId];
-        if (!room)
+    socket.on('send-message', ({ roomId, userName, message }) => {
+        if (!rooms[roomId])
             return;
-        const user = room.users.find((u) => u.name === message.user);
-        if (user) {
-            message.color = user.color;
-        }
-        room.chatHistory.push(message);
-        io.to(roomId).emit('chat-message', message);
-    });
-    socket.on('vote', ({ roomId, userName, restaurantName, vote }) => {
-        const user = rooms[roomId].users.find(u => u.name === userName);
-        if (user) {
-            // Advance the user's personal restaurant index
-            user.restaurantIndex++;
-            io.to(roomId).emit('update-user-list', rooms[roomId].users);
-        }
-        if (vote === 'OUI') {
-            if (!rooms[roomId].leaderboard[restaurantName]) {
-                rooms[roomId].leaderboard[restaurantName] = { votes: 0, voters: [] };
-            }
-            rooms[roomId].leaderboard[restaurantName].votes++;
-            if (user && !rooms[roomId].leaderboard[restaurantName].voters.some(v => v.id === user.id)) {
-                rooms[roomId].leaderboard[restaurantName].voters.push(user);
-            }
-            io.to(roomId).emit('update-leaderboard', rooms[roomId].leaderboard);
-        }
-        const voteMessage = {
+        const chatMessage = {
             id: Date.now(),
             user: userName,
-            text: `a voté ${vote} pour ${restaurantName}`,
-            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            type: 'vote',
+            text: message,
+            time: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+            type: 'chat'
         };
-        rooms[roomId].chatHistory.push(voteMessage);
-        io.to(roomId).emit('chat-message', voteMessage);
+        rooms[roomId].chatHistory.push(chatMessage);
+        io.to(roomId).emit('new-message', chatMessage);
+    });
+    socket.on('vote', ({ roomId, userName, restaurantName, vote }) => {
+        if (!rooms[roomId])
+            return;
+        const user = rooms[roomId].users.find(u => u.name === userName);
+        if (!user)
+            return;
+        if (!rooms[roomId].leaderboard[restaurantName]) {
+            rooms[roomId].leaderboard[restaurantName] = { votes: 0, voters: [] };
+        }
+        const entry = rooms[roomId].leaderboard[restaurantName];
+        const hasVoted = entry.voters.some(v => v.name === userName);
+        if (vote === 'OUI' && !hasVoted) {
+            entry.votes++;
+            entry.voters.push(user);
+            const voteMessage = {
+                id: Date.now(),
+                user: userName,
+                text: `a voté pour ${restaurantName} 👍`,
+                time: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+                type: 'vote'
+            };
+            rooms[roomId].chatHistory.push(voteMessage);
+            io.to(roomId).emit('new-message', voteMessage);
+        }
+        user.restaurantIndex++;
+        io.to(roomId).emit('leaderboard-update', rooms[roomId].leaderboard);
+        socket.to(roomId).emit('user-update', rooms[roomId].users);
+    });
+    socket.on('opt-out', ({ roomId, userName }) => {
+        if (!rooms[roomId])
+            return;
+        const user = rooms[roomId].users.find(u => u.name === userName);
+        if (user) {
+            user.restaurantIndex = 999;
+            socket.to(roomId).emit('user-update', rooms[roomId].users);
+        }
     });
     socket.on('disconnect', () => {
         console.log('user disconnected', socket.id);
-        for (const roomId in rooms) {
-            const user = rooms[roomId].users.find((user) => user.id === socket.id);
+        Object.keys(rooms).forEach(roomId => {
+            const user = rooms[roomId].users.find(u => u.id === socket.id);
             if (user) {
                 user.online = false;
-                io.to(roomId).emit('update-user-list', rooms[roomId].users);
-                break; // A user can only be in one room, so we can stop looking.
+                socket.to(roomId).emit('user-update', rooms[roomId].users);
             }
-        }
+        });
     });
 });
 const PORT = process.env.PORT || 3001;
