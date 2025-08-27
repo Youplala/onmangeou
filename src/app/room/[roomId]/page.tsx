@@ -2,13 +2,14 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'next/navigation';
-import { motion, AnimatePresence, useMotionValue, useTransform, animate } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import { io, Socket } from 'socket.io-client';
 
 // Components
 import RoomHeader from '@/components/room/RoomHeader';
 import Timer from '@/components/room/Timer';
 import RestaurantCard from '@/components/room/RestaurantCard';
+import RestaurantDeck from '@/components/room/RestaurantDeck';
 import WinnerCard from '@/components/room/WinnerCard';
 import VotingButtons from '@/components/room/VotingButtons';
 import Leaderboard from '@/components/room/Leaderboard';
@@ -60,10 +61,14 @@ interface RoomState {
 
 // --- MOCK DATA ---
 const mockRestaurants: Restaurant[] = [
-  { id: '1', name: 'Pizza Hut', emoji: '🍕', foodType: '🇮🇹', price: '10-15€', walkTime: '5 min', description: 'Pizzas classiques.', googleMapsUrl: 'https://maps.app.goo.gl/HwkNRHfH5taK8E668', menuUrl: 'https://www.pizzahut.fr/huts/fr-1/96-paris-16eme-nord/&utm_source=google&utm_medium=maps&utm_campaign=menu_url?y_source=1_MTEzMzUwMDktNzE1LWxvY2F0aW9uLm1lbnVfdXJs' },
+  { id: '1', name: 'Pizza Hut', emoji: '🍕', foodType: '🇮🇹', price: '10-15€', walkTime: '5 min', description: 'Chaîne connue pour ses pizzas, ailes de poulet, pâtes, accompagnements et desserts, à manger sur place, à emporter ou en livraison.', googleMapsUrl: 'https://maps.app.goo.gl/HwkNRHfH5taK8E668', menuUrl: 'https://www.pizzahut.fr/huts/fr-1/96-paris-16eme-nord/&utm_source=google&utm_medium=maps&utm_campaign=menu_url?y_source=1_MTEzMzUwMDktNzE1LWxvY2F0aW9uLm1lbnVfdXJs' },
   { id: '2', name: 'Compose', emoji: '🥗', foodType: '🇫🇷', price: '10-15€', walkTime: '5 min', description: 'Salades sur mesure.', googleMapsUrl: 'https://maps.app.goo.gl/BnCfeAjHxqapsaXZ7', menuUrl: 'https://composeparis.fr/?menu-section' },
   { id: '3', name: 'Biothentique', emoji: '🍜', foodType: '🇻🇳', price: '10-15€', walkTime: '5 min', description: 'Bobuns, banh mi et plats bio.', googleMapsUrl: 'https://maps.app.goo.gl/LkrWYFesTr5RhTnX6', menuUrl: 'https://biothentique-vietnam.bykomdab.com/?order=true' },
-  { id: '4', name: "Birdy", emoji: '🍔', foodType: '🇺🇸', price: '15-20€', walkTime: '5 min', description: 'Burgers et plates américains.', googleMapsUrl: 'https://maps.app.goo.gl/HHhqd7EshQrTmBi48', menuUrl: 'https://maps.app.goo.gl/HHhqd7EshQrTmBi48' },
+  { id: '4', name: "Birdy", emoji: '🍔', foodType: '🇺🇸', price: '15-20€', walkTime: '5 min', description: 'Burgers et plats américains.', googleMapsUrl: 'https://maps.app.goo.gl/HHhqd7EshQrTmBi48', menuUrl: 'https://maps.app.goo.gl/HHhqd7EshQrTmBi48' },
+  { id: '5', name: "Maison Lauriston", emoji: '🍝', foodType: '🇮🇹', price: '15-20€', walkTime: '5 min', description: 'Spaghetti et plats français.', googleMapsUrl: 'https://maps.app.goo.gl/42i3Efh2efZfm5xo7', menuUrl: 'https://maison-lauriston-restaurant-paris.eatbu.com/?lang=fr' },
+  { id: '6', name: "Dang", emoji: '🍜', foodType: '🇻🇳', price: '10-15€', walkTime: '5 min', description: 'Traiteur vietnamien.', googleMapsUrl: 'https://maps.app.goo.gl/rZB44fwP8Tzj1srC7', menuUrl: 'https://maps.app.goo.gl/rZB44fwP8Tzj1srC7' },
+  { id: '7', name: "Au P'tit Viet", emoji: '🍜', foodType: '🇻🇳', price: '10-15€', walkTime: '5 min', description: 'Restaurant vietnamien.', googleMapsUrl: 'https://maps.app.goo.gl/H4TKDoEuSFaaBDRX6', menuUrl: 'https://maps.app.goo.gl/H4TKDoEuSFaaBDRX6' },
+  { id: '8', name: "Paris Follie's", emoji: '🍝', foodType: '🇫🇷', price: '10-15€', walkTime: '5 min', description: 'Brasserie simple avec tables côté rue proposant grillades, burgers, salades et plats français classiques.', googleMapsUrl: 'https://maps.app.goo.gl/H4TKDoEuSFaaBDRX6', menuUrl: 'https://maps.app.goo.gl/H4TKDoEuSFaaBDRX6' },
 ];
 
 // --- COMPONENT
@@ -116,12 +121,7 @@ export default function RoomPage() {
     }
   };
 
-  const x = useMotionValue(0);
-  const rotate = useTransform(x, [-200, 200], [-30, 30]);
-  const overlayGreen = useTransform(x, [0, 60, 200], [0, 0.15, 0.35]);
-  const overlayRed = useTransform(x, [-200, -60, 0], [0.35, 0.15, 0]);
-  const crossOpacity = useTransform(x, [-200, -60, 0], [1, 0.6, 0]);
-  const checkOpacity = useTransform(x, [0, 60, 200], [0, 0.6, 1]);
+
 
   // --- EFFECTS ---
   useEffect(() => {
@@ -131,30 +131,29 @@ export default function RoomPage() {
 
     const calculateTimeLeft = () => {
       const now = new Date();
-      let noon = new Date(now);
+      const noon = new Date(now);
       noon.setHours(12, 0, 0, 0);
 
-      if (now > noon) {
-        return { display: "Le vote est terminé ! Revenez demain !", isOver: true };
-      }
-
-      let diff = noon.getTime() - now.getTime();
+      const diff = noon.getTime() - now.getTime();
+      
       if (diff <= 0) {
         return { display: "Le vote est terminé !", isOver: true };
       }
-      const h = Math.floor(diff / 3600000); diff -= h * 3600000;
-      const m = Math.floor(diff / 60000); diff -= m * 60000;
-      const s = Math.floor(diff / 1000);
-      if (h > 0) return { display: `Tirage au sort dans ${h}h ${m}m`, isOver: false };
-      if (m > 0) return { display: `Tirage au sort dans ${m}m ${s}s`, isOver: false };
-      if (s > 0) return { display: `Tirage au sort dans ${s}s`, isOver: false };
+
+      const hours = Math.floor(diff / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+      if (hours > 0) return { display: `Tirage au sort dans ${hours}h ${minutes}m`, isOver: false };
+      if (minutes > 0) return { display: `Tirage au sort dans ${minutes}m ${seconds}s`, isOver: false };
+      if (seconds > 0) return { display: `Tirage au sort dans ${seconds}s`, isOver: false };
       return { display: "Tirage au sort imminent !", isOver: false };
     };
 
     const timer = setInterval(() => {
       const { display, isOver } = calculateTimeLeft();
       setTimeLeft(display);
-      // Only auto-finish the vote in production. In dev, use the button.
+      // Auto-finish the vote when time is up in production
       if (isOver && process.env.NODE_ENV === 'production') {
         setIsVotingFinished(true);
         clearInterval(timer);
@@ -249,26 +248,25 @@ export default function RoomPage() {
     setTimeout(() => setIsInviteCopied(false), 2000);
   };
 
-  const triggerVoteWithAnimation = (vote: 'OUI' | 'NON') => {
-    if (isVotingAnimation) return;
-    setIsVotingAnimation(true);
-    setPlaySwipeHint(false);
-    const to = vote === 'OUI' ? 350 : -350;
-    animate(x, to, {
-      duration: 0.28,
-      ease: 'easeInOut',
-      onComplete: () => {
-        handleVote(vote);
-        setIsVotingAnimation(false);
-      },
-    });
-  };
+
 
   const handleVote = (vote: 'OUI' | 'NON') => {
     if (!userName || !socketRef.current || !currentUser || currentUser.restaurantIndex >= mockRestaurants.length) return;
+    
+    // Prevent voting after noon in production
+    if (process.env.NODE_ENV === 'production') {
+      const now = new Date();
+      const noon = new Date(now);
+      noon.setHours(12, 0, 0, 0);
+      if (now >= noon) {
+        console.log('Voting is closed - deadline has passed');
+        return;
+      }
+    }
+    
+    setPlaySwipeHint(false);
     const restaurantName = mockRestaurants[currentUser.restaurantIndex].name;
     socketRef.current.emit('vote', { roomId: params.roomId, userName, restaurantName, vote });
-    x.set(0);
   };
 
   const handleSendMessage = (e: React.FormEvent) => {
@@ -321,21 +319,12 @@ export default function RoomPage() {
               <Timer timeLeft={timeLeft} />
               <AnimatePresence>
               {!isVotingFinished && currentUser && currentUser.restaurantIndex < mockRestaurants.length ? (
-                <RestaurantCard
-                  restaurant={mockRestaurants[currentUser.restaurantIndex]}
+                <RestaurantDeck
+                  restaurants={mockRestaurants}
+                  currentIndex={currentUser.restaurantIndex}
+                  onVote={handleVote}
                   isVotingAnimation={isVotingAnimation}
                   playSwipeHint={playSwipeHint}
-                  onDragEnd={(e, { offset }) => {
-                    if (offset.x > 100) triggerVoteWithAnimation('OUI');
-                    else if (offset.x < -100) triggerVoteWithAnimation('NON');
-                    else x.set(0);
-                  }}
-                  x={x}
-                  rotate={rotate}
-                  overlayGreen={overlayGreen}
-                  overlayRed={overlayRed}
-                  crossOpacity={crossOpacity}
-                  checkOpacity={checkOpacity}
                 />
               ) : (
                 (() => {
@@ -360,17 +349,17 @@ export default function RoomPage() {
 
                   return (
                     <div className="text-center font-extrabold text-3xl md:text-4xl text-black bg-white/70 backdrop-blur rounded-2xl ring-1 ring-black/10 p-8 shadow-xl">
-                      C'EST FINI !
+                      Reviens demain !
                     </div>
                   );
                 })()
               )}
               </AnimatePresence>
               {!isVotingFinished && currentUser && currentUser.restaurantIndex < mockRestaurants.length && (
-                <div className="mt-4 w-full flex justify-center">
+                <div className="mt-4 w-full flex justify-center relative z-20">
                   <VotingButtons
-                    onVoteYes={() => triggerVoteWithAnimation('OUI')}
-                    onVoteNo={() => triggerVoteWithAnimation('NON')}
+                    onVoteYes={() => handleVote('OUI')}
+                    onVoteNo={() => handleVote('NON')}
                     isVotingAnimation={isVotingAnimation}
                   />
                 </div>

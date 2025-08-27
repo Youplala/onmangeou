@@ -128,7 +128,7 @@ io.on('connection', (socket) => {
 
     user.restaurantIndex++;
     io.to(roomId).emit('leaderboard-update', rooms[roomId].leaderboard);
-    socket.to(roomId).emit('user-update', rooms[roomId].users);
+    io.to(roomId).emit('user-update', rooms[roomId].users);
   });
 
   socket.on('opt-out', ({ roomId, userName }) => {
