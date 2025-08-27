@@ -2,20 +2,15 @@ import { createServer } from 'http';
 import { Server } from 'socket.io';
 
 const httpServer = createServer();
-const allowedOrigins = process.env.NODE_ENV === 'production' 
-  ? [
-      "https://onmangeou-six.vercel.app",
-      "https://onmangeou-git-main-youplala.vercel.app", 
-      /\.vercel\.app$/,
-      process.env.FRONTEND_URL
-    ].filter(Boolean) as (string | RegExp)[]
-  : "*";
-
 const io = new Server(httpServer, {
   cors: {
-    origin: allowedOrigins,
-    methods: ["GET", "POST"],
-    credentials: true
+    origin: process.env.NODE_ENV === 'production' 
+      ? [
+          "https://onmangeou-six.vercel.app",
+          "https://onmangeou-git-main-youplala.vercel.app",
+          /\.vercel\.app$/
+        ]
+      : "*",
   },
 });
 
@@ -55,8 +50,7 @@ const userColors = [
 ];
 
 io.on('connection', (socket) => {
-  console.log('a user connected:', socket.id);
-  console.log('Origin:', socket.handshake.headers.origin);
+  console.log('a user connected');
 
   socket.on('join-room', ({ roomId, userName }) => {
     socket.join(roomId);
