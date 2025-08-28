@@ -179,7 +179,7 @@ export default function RestaurantSelector({
     return (
       <div className="flex flex-col items-center justify-center h-96 text-center">
         <div className="text-6xl mb-4">🎉</div>
-        <h3 className="text-xl font-semibold text-gray-800 mb-2">Tous les restaurants votés!</h3>
+        <h3 className="text-xl font-semibold text-gray-800 mb-2">Tous les restaurants ont été votés!</h3>
         <p className="text-gray-600 mb-4">Attendez que les autres terminent leur vote</p>
       </div>
     );

@@ -175,7 +175,7 @@ export default function Chat({
                       type="text"
                       value={newMessage}
                       onChange={(e) => setNewMessage(e.target.value)}
-                      className="flex-1 rounded-xl bg-white/70 backdrop-blur ring-1 ring-black/10 px-3 py-3 text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-400/50"
+                      className="flex-1 rounded-xl bg-white/70 backdrop-blur ring-1 ring-black/10 px-3 py-3 text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-400/50 text-gray-900 caret-emerald-600 placeholder:text-gray-600 placeholder:opacity-90"
                       placeholder="Écris ton message..."
                     />
                     <button 
