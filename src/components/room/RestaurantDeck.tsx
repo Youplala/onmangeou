@@ -1,18 +1,38 @@
 import { motion, useMotionValue, useTransform, animate } from 'framer-motion';
-import { useEffect } from 'react';
+import { useEffect, useImperativeHandle, forwardRef, useRef, useState, useCallback } from 'react';
 import RestaurantCard from './RestaurantCard';
 
 // --- TYPES ---
 interface Restaurant {
   id: string;
   name: string;
-  emoji: string;
-  foodType: string;
-  price: string;
-  walkTime: string;
   description: string;
-  googleMapsUrl: string;
-  menuUrl: string;
+  rating: number;
+  reviewCount: number;
+  categories: string[];
+  mainCategory: string;
+  address: string;
+  phone: string;
+  website: string;
+  featuredImage: string;
+  workdayTiming: string;
+  closedOn: string[];
+  isTemporarilyClosed: boolean;
+  reviewKeywords: string[];
+  googleMapsLink: string;
+  competitors: Array<{
+    name: string;
+    link: string;
+    reviews: string;
+    rating: number;
+    mainCategory: string;
+  }>;
+  isSpendingOnAds: boolean;
+  priceRange: string;
+  coordinates?: {
+    latitude: number;
+    longitude: number;
+  };
 }
 
 interface RestaurantDeckProps {
@@ -23,20 +43,29 @@ interface RestaurantDeckProps {
   onVote: (vote: 'OUI' | 'NON') => void;
 }
 
+export interface RestaurantDeckRef {
+  triggerSwipeAnimation: (direction: 'left' | 'right') => void;
+}
+
 // --- COMPONENT ---
-export default function RestaurantDeck({
+const RestaurantDeck = forwardRef<RestaurantDeckRef, RestaurantDeckProps>(function RestaurantDeck({
   restaurants,
   currentIndex,
   isVotingAnimation,
   playSwipeHint,
   onVote,
-}: RestaurantDeckProps) {
+}, ref) {
   const x = useMotionValue(0);
   const rotate = useTransform(x, [-200, 200], [-15, 15]);
   const overlayGreen = useTransform(x, [0, 60, 200], [0, 0.15, 0.35]);
   const overlayRed = useTransform(x, [-200, -60, 0], [0.35, 0.15, 0]);
   const crossOpacity = useTransform(x, [-200, -60, 0], [1, 0.6, 0]);
   const checkOpacity = useTransform(x, [0, 60, 200], [0, 0.6, 1]);
+
+  // Leaving overlay state and motion values (decoupled from shared x)
+  const [leaving, setLeaving] = useState<{ restaurant: Restaurant; direction: 'left' | 'right' } | null>(null);
+  const leavingX = useMotionValue(0);
+  const leavingRotate = useTransform(leavingX, [-200, 200], [-15, 15]);
 
   // Animated swipe hint demonstration
   useEffect(() => {
@@ -84,6 +113,11 @@ export default function RestaurantDeck({
     }
   }, [playSwipeHint, x]);
 
+  // Ensure the new top card starts centered after the index advances
+  useEffect(() => {
+    x.set(0);
+  }, [currentIndex]);
+
   const handleDragEnd = (e: any, { offset }: any) => {
     if (offset.x > 100) {
       onVote('OUI');
@@ -94,8 +128,25 @@ export default function RestaurantDeck({
     }
   };
 
+  const triggerSwipeAnimation = useCallback(async (direction: 'left' | 'right') => {
+    if (leaving) return;
+    const current = restaurants[currentIndex];
+    if (!current) return;
+    // Start overlay from current drag position
+    setLeaving({ restaurant: current, direction });
+    leavingX.set(x.get());
+    const targetX = direction === 'right' ? 420 : -420;
+    await animate(leavingX, targetX, { ease: 'easeOut', duration: 0.26 });
+    setLeaving(null);
+    leavingX.set(0);
+  }, [leaving, restaurants, currentIndex, leavingX, x]);
+
+  useImperativeHandle(ref, () => ({
+    triggerSwipeAnimation,
+  }), [triggerSwipeAnimation]);
+
   return (
-    <div className="relative w-full max-w-sm mx-auto" style={{ height: '520px' }}>
+    <div className="relative w-full max-w-sm mx-auto" style={{ height: '560px' }}>
       {/* Enhanced Swipe Hint */}
       {playSwipeHint && (
         <motion.div
@@ -110,13 +161,13 @@ export default function RestaurantDeck({
           </div>
           <div className="flex items-center gap-3 text-xs text-gray-600">
             <div className="flex items-center gap-1">
-              <span className="text-green-600">←</span>
-              <span>Allez</span>
+              <span className="text-red-600">←</span>
+              <span>Pas chaud</span>
             </div>
             <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
             <div className="flex items-center gap-1">
-              <span>Pas chaud</span>
-              <span className="text-red-600">→</span>
+              <span>Allez</span>
+              <span className="text-green-600">→</span>
             </div>
           </div>
         </motion.div>
@@ -126,13 +177,13 @@ export default function RestaurantDeck({
       {restaurants.slice(currentIndex, currentIndex + 3).map((restaurant, i) => {
         const isTop = i === 0;
         const zIndex = 10 - i;
-        const scale = 1 - i * 0.04;
-        const yOffset = i * 8;
-        const opacity = 1 - i * 0.1;
+        const scale = 1 - i * 0.05;
+        const yOffset = i * 12;
+        const opacity = i === 0 ? 1 : 0.8 - i * 0.3;
 
         return (
           <motion.div
-            key={`${restaurant.id}-${currentIndex}`}
+            key={restaurant.id}
             className="absolute w-full h-full"
             style={{
               zIndex,
@@ -168,13 +219,25 @@ export default function RestaurantDeck({
         );
       })}
 
-      {/* Card Counter */}
+      {/* Leaving overlay card */}
+      {leaving && (
+        <motion.div
+          className="absolute w-full h-full"
+          style={{ zIndex: 20, x: leavingX, rotate: leavingRotate }}
+        >
+          <RestaurantCard restaurant={leaving.restaurant} />
+        </motion.div>
+      )}
+
+      {/* Card Counter - Moved to bottom */}
       <div
-        className="absolute bottom-16 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur text-gray-800 ring-1 ring-black/10 px-4 py-2 text-sm font-semibold rounded-full shadow-lg"
+        className="absolute -bottom-6 left-1/2 -translate-x-1/2 bg-white/95 backdrop-blur text-gray-800 ring-1 ring-black/10 px-4 py-2 text-sm font-bold rounded-full shadow-lg"
         style={{ zIndex: 1000, pointerEvents: 'none' }}
       >
         {currentIndex + 1} / {restaurants.length}
       </div>
     </div>
   );
-}
+});
+
+export default RestaurantDeck;

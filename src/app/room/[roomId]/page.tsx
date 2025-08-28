@@ -10,6 +10,7 @@ import RoomHeader from '@/components/room/RoomHeader';
 import Timer from '@/components/room/Timer';
 import RestaurantCard from '@/components/room/RestaurantCard';
 import RestaurantDeck from '@/components/room/RestaurantDeck';
+import RestaurantSelector from '@/components/room/RestaurantSelector';
 import WinnerCard from '@/components/room/WinnerCard';
 import VotingButtons from '@/components/room/VotingButtons';
 import Leaderboard from '@/components/room/Leaderboard';
@@ -20,13 +21,26 @@ import Chat from '@/components/room/Chat';
 interface Restaurant {
   id: string;
   name: string;
-  emoji: string;
-  foodType: string;
-  price: string;
-  walkTime: string;
   description: string;
-  googleMapsUrl: string;
-  menuUrl: string;
+  rating: number;
+  reviewCount: number;
+  categories: string[];
+  mainCategory: string;
+  address: string;
+  phone: string;
+  website: string;
+  featuredImage: string;
+  workdayTiming: string;
+  closedOn: string;
+  isTemporarilyClosed: boolean;
+  reviewKeywords: string[];
+  googleMapsLink: string;
+  competitors: Array<{
+    name: string;
+    link: string;
+    reviews: string;
+  }>;
+  isSpendingOnAds: boolean;
 }
 
 interface User {
@@ -60,17 +74,7 @@ interface RoomState {
   currentRestaurantIndex: number;
 }
 
-// --- MOCK DATA ---
-const mockRestaurants: Restaurant[] = [
-  { id: '1', name: 'Pizza Hut', emoji: '🍕', foodType: '🇮🇹', price: '10-15€', walkTime: '5 min', description: 'Chaîne connue pour ses pizzas, ailes de poulet, pâtes, accompagnements et desserts, à manger sur place, à emporter ou en livraison.', googleMapsUrl: 'https://maps.app.goo.gl/HwkNRHfH5taK8E668', menuUrl: 'https://www.pizzahut.fr/huts/fr-1/96-paris-16eme-nord/&utm_source=google&utm_medium=maps&utm_campaign=menu_url?y_source=1_MTEzMzUwMDktNzE1LWxvY2F0aW9uLm1lbnVfdXJs' },
-  { id: '2', name: 'Compose', emoji: '🥗', foodType: '🇫🇷', price: '10-15€', walkTime: '5 min', description: 'Salades sur mesure.', googleMapsUrl: 'https://maps.app.goo.gl/BnCfeAjHxqapsaXZ7', menuUrl: 'https://composeparis.fr/?menu-section' },
-  { id: '3', name: 'Biothentique', emoji: '🍜', foodType: '🇻🇳', price: '10-15€', walkTime: '5 min', description: 'Bobuns, banh mi et plats bio.', googleMapsUrl: 'https://maps.app.goo.gl/LkrWYFesTr5RhTnX6', menuUrl: 'https://biothentique-vietnam.bykomdab.com/?order=true' },
-  { id: '4', name: "Birdy", emoji: '🍔', foodType: '🇺🇸', price: '15-20€', walkTime: '5 min', description: 'Burgers et plats américains.', googleMapsUrl: 'https://maps.app.goo.gl/HHhqd7EshQrTmBi48', menuUrl: 'https://maps.app.goo.gl/HHhqd7EshQrTmBi48' },
-  { id: '5', name: "Maison Lauriston", emoji: '🍝', foodType: '🇮🇹', price: '15-20€', walkTime: '5 min', description: 'Spaghetti et plats français.', googleMapsUrl: 'https://maps.app.goo.gl/42i3Efh2efZfm5xo7', menuUrl: 'https://maison-lauriston-restaurant-paris.eatbu.com/?lang=fr' },
-  { id: '6', name: "Dang", emoji: '🍜', foodType: '🇻🇳', price: '10-15€', walkTime: '5 min', description: 'Traiteur vietnamien.', googleMapsUrl: 'https://maps.app.goo.gl/rZB44fwP8Tzj1srC7', menuUrl: 'https://maps.app.goo.gl/rZB44fwP8Tzj1srC7' },
-  { id: '7', name: "Au P'tit Viet", emoji: '🍜', foodType: '🇻🇳', price: '10-15€', walkTime: '5 min', description: 'Restaurant vietnamien.', googleMapsUrl: 'https://maps.app.goo.gl/H4TKDoEuSFaaBDRX6', menuUrl: 'https://maps.app.goo.gl/H4TKDoEuSFaaBDRX6' },
-  { id: '8', name: "Paris Follie's", emoji: '🍝', foodType: '🇫🇷', price: '10-15€', walkTime: '5 min', description: 'Brasserie simple avec tables côté rue proposant grillades, burgers, salades et plats français classiques.', googleMapsUrl: 'https://maps.app.goo.gl/H4TKDoEuSFaaBDRX6', menuUrl: 'https://maps.app.goo.gl/H4TKDoEuSFaaBDRX6' },
-];
+// Restaurant data is now loaded dynamically from the server
 
 // --- COMPONENT
 export default function RoomPage() {
@@ -259,11 +263,11 @@ export default function RoomPage() {
 
 
 
-  const handleVote = (vote: 'OUI' | 'NON') => {
-    if (!userName || !socketRef.current || !currentUser || currentUser.restaurantIndex >= mockRestaurants.length) return;
+  const handleVote = (restaurantName: string, vote: 'OUI' | 'NON') => {
+    if (!userName || !socketRef.current) return;
     
     // Prevent voting if user has opted out
-    if (hasOptedOut || currentUser.hasOptedOut) {
+    if (hasOptedOut || (currentUser && currentUser.hasOptedOut)) {
       console.log('Cannot vote - user has opted out');
       return;
     }
@@ -280,7 +284,6 @@ export default function RoomPage() {
     }
     
     setPlaySwipeHint(false);
-    const restaurantName = mockRestaurants[currentUser.restaurantIndex].name;
     socketRef.current.emit('vote', { roomId: params.roomId, userName, restaurantName, vote });
   };
 
@@ -331,7 +334,7 @@ export default function RoomPage() {
             <Leaderboard leaderboard={leaderboard} isHidden={!isVotingFinished} />
           </div>
           <div className="rounded-2xl bg-white/60 backdrop-blur ring-1 ring-black/10 shadow-xl p-4">
-            <PlayersList users={users} mockRestaurantsLength={mockRestaurants.length} />
+            <PlayersList users={users} mockRestaurantsLength={10} />
           </div>
         </div>
 
@@ -342,33 +345,30 @@ export default function RoomPage() {
             <div className="flex flex-col items-center">
               <Timer timeLeft={timeLeft} />
               <AnimatePresence>
-              {!isVotingFinished && currentUser && currentUser.restaurantIndex < mockRestaurants.length ? (
-                <RestaurantDeck
-                  restaurants={mockRestaurants}
-                  currentIndex={currentUser.restaurantIndex}
-                  onVote={handleVote}
-                  isVotingAnimation={isVotingAnimation}
-                  playSwipeHint={playSwipeHint}
-                />
+              {!isVotingFinished ? (
+                !hasOptedOut && (!currentUser || !currentUser.hasOptedOut) ? (
+                  <RestaurantSelector
+                    socket={socketRef.current}
+                    userName={userName || ''}
+                    roomId={params.roomId as string}
+                    currentUserIndex={currentUser?.restaurantIndex || 0}
+                    onVote={handleVote}
+                  />
+                ) : (
+                  <div className="text-center bg-rose-100/80 backdrop-blur rounded-xl ring-1 ring-rose-200 p-8 shadow-sm">
+                    <div className="text-6xl mb-4">🚫</div>
+                    <div className="text-rose-800 font-semibold">Vous ne participez plus au vote</div>
+                    <div className="text-rose-600 text-sm mt-2">Attendez que les autres terminent</div>
+                  </div>
+                )
               ) : (
                 (() => {
-                  // If the vote is not finished yet (e.g., user has swiped all cards but countdown not over),
-                  // do NOT reveal the winner. Show a waiting message instead.
-                  if (!isVotingFinished) {
-                    return (
-                      <div className="text-center bg-white/70 backdrop-blur rounded-2xl ring-1 ring-black/10 p-8 shadow-xl">
-                        <div className="text-2xl md:text-3xl font-extrabold text-black mb-1">En attente des autres votes…</div>
-                        <div className="text-black/70 font-semibold">Le gagnant sera révélé à la fin du compte à rebours.</div>
-                      </div>
-                    );
-                  }
-
                   const sortedLeaderboard = Object.entries(leaderboard).sort(([, a], [, b]) => b.votes - a.votes);
                   const winnerEntry = sortedLeaderboard.length > 0 ? sortedLeaderboard[0] : null;
-                  const winnerRestaurant = winnerEntry ? mockRestaurants.find(r => r.name === winnerEntry[0]) : null;
 
-                  if (winnerRestaurant) {
-                    return <WinnerCard restaurant={winnerRestaurant} />;
+                  if (winnerEntry) {
+                    const [winnerName, meta] = winnerEntry as [string, { votes: number }];
+                    return <WinnerCard name={winnerName} votes={meta.votes} />;
                   }
 
                   return (
@@ -379,22 +379,6 @@ export default function RoomPage() {
                 })()
               )}
               </AnimatePresence>
-              {!isVotingFinished && currentUser && currentUser.restaurantIndex < mockRestaurants.length && !hasOptedOut && !currentUser.hasOptedOut && (
-                <div className="mt-4 w-full flex justify-center relative z-20">
-                  <VotingButtons
-                    onVoteYes={() => handleVote('OUI')}
-                    onVoteNo={() => handleVote('NON')}
-                    isVotingAnimation={isVotingAnimation}
-                  />
-                </div>
-              )}
-              {!isVotingFinished && currentUser && currentUser.restaurantIndex < mockRestaurants.length && (hasOptedOut || currentUser.hasOptedOut) && (
-                <div className="mt-4 w-full flex justify-center relative z-20">
-                  <div className="text-center bg-rose-100/80 backdrop-blur rounded-xl ring-1 ring-rose-200 p-4 shadow-sm">
-                    <div className="text-rose-800 font-semibold text-sm">🚫 Vous ne participez plus au vote</div>
-                  </div>
-                </div>
-              )}
             </div>
           </div>
         </div>

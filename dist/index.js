@@ -36,7 +36,8 @@ io.on('connection', (socket) => {
                 name: userName,
                 color: userColors[rooms[roomId].users.length % userColors.length],
                 restaurantIndex: 0,
-                online: true
+                online: true,
+                hasOptedOut: false
             };
             rooms[roomId].users.push(newUser);
         }
@@ -64,7 +65,7 @@ io.on('connection', (socket) => {
         if (!rooms[roomId])
             return;
         const user = rooms[roomId].users.find(u => u.name === userName);
-        if (!user)
+        if (!user || user.hasOptedOut)
             return;
         if (!rooms[roomId].leaderboard[restaurantName]) {
             rooms[roomId].leaderboard[restaurantName] = { votes: 0, voters: [] };
@@ -86,15 +87,15 @@ io.on('connection', (socket) => {
         }
         user.restaurantIndex++;
         io.to(roomId).emit('leaderboard-update', rooms[roomId].leaderboard);
-        socket.to(roomId).emit('user-update', rooms[roomId].users);
+        io.to(roomId).emit('user-update', rooms[roomId].users);
     });
-    socket.on('opt-out', ({ roomId, userName }) => {
+    socket.on('user-opt-out', ({ roomId, userName }) => {
         if (!rooms[roomId])
             return;
         const user = rooms[roomId].users.find(u => u.name === userName);
         if (user) {
-            user.restaurantIndex = 999;
-            socket.to(roomId).emit('user-update', rooms[roomId].users);
+            user.hasOptedOut = true;
+            io.to(roomId).emit('user-update', rooms[roomId].users);
         }
     });
     socket.on('disconnect', () => {
