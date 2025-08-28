@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'next/navigation';
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import { io, Socket } from 'socket.io-client';
 
 // Components
@@ -372,9 +372,31 @@ export default function RoomPage() {
                   }
 
                   return (
-                    <div className="text-center font-extrabold text-3xl md:text-4xl text-black bg-white/70 backdrop-blur rounded-2xl ring-1 ring-black/10 p-8 shadow-xl">
-                      Reviens demain !
-                    </div>
+                    <motion.div
+                      initial={{ scale: 0.9, opacity: 0, y: 10 }}
+                      animate={{ scale: 1, opacity: 1, y: 0 }}
+                      transition={{ type: 'spring', stiffness: 260, damping: 20 }}
+                      className="text-center bg-white/80 backdrop-blur rounded-3xl ring-1 ring-black/10 p-8 shadow-2xl"
+                    >
+                      <div className="text-6xl mb-2">🕛</div>
+                      <div className="text-2xl md:text-3xl font-extrabold text-black">C'est midi !</div>
+                      <div className="mt-1 text-black/70 font-medium">Pas de gagnant aujourd'hui</div>
+                      <div className="mt-4 text-sm text-black/60">On remet ça demain ? Invite la team 👇</div>
+                      <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <button
+                          onClick={handleInviteCopy}
+                          className={`rounded-xl px-4 py-3 text-sm font-bold shadow cursor-pointer bg-gradient-to-r from-emerald-500 to-green-600 text-white hover:from-emerald-600 hover:to-green-700 ${isInviteCopied ? 'ring-2 ring-emerald-300' : ''}`}
+                        >
+                          {isInviteCopied ? '✅ Lien copié' : '📋 Copier le lien pour demain'}
+                        </button>
+                        <button
+                          onClick={() => setShowChat(true)}
+                          className="rounded-xl px-4 py-3 text-sm font-bold shadow cursor-pointer bg-black/80 text-white hover:bg-black"
+                        >
+                          💬 Ouvrir le chat
+                        </button>
+                      </div>
+                    </motion.div>
                   );
                 })()
               )}

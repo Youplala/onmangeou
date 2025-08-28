@@ -181,12 +181,6 @@ export default function RestaurantSelector({
         <div className="text-6xl mb-4">🎉</div>
         <h3 className="text-xl font-semibold text-gray-800 mb-2">Tous les restaurants votés!</h3>
         <p className="text-gray-600 mb-4">Attendez que les autres terminent leur vote</p>
-        <button
-          onClick={handleRefreshRestaurants}
-          className="rounded-xl bg-gradient-to-r from-orange-500 to-rose-600 text-white font-semibold px-6 py-3 shadow hover:opacity-95 transition"
-        >
-          Nouveaux restaurants
-        </button>
       </div>
     );
   }
