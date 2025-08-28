@@ -1,36 +1,88 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# On Mange Où ? 🍽️
 
-## Getting Started
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://makeapullrequest.com)
+![GitHub stars](https://img.shields.io/github/stars/Youplala/onmangeou?style=social)
+![Next.js](https://img.shields.io/badge/Next.js-15-black)
+![Socket.IO](https://img.shields.io/badge/Socket.IO-Real--time-blue)
 
-First, run the development server:
+Discover a place for lunch with your team in seconds. Swipe to vote, see the live leaderboard, and chat in real time. Built for speed, fun, and mobile.
+
+<img alt="On Mange Où – screenshot" src="./public/landing.png" width="900" />
+
+---
+
+## ✨ Features
+
+- __Real-time rooms__: join a room and see live updates via `socket.io`
+- __Swipe-style voting__: quickly vote OUI/NON on restaurants
+- __Live leaderboard__: top picks update instantly
+- __Built‑in chat__: lightweight, mobile-first chat with notifications
+- __Noon cutoff__: automatic end-of-vote at 12:00 (production)
+- __Polished UI__: Tailwind v4, glassmorphism, subtle animations with Framer Motion
+
+## 🚀 Quick start
+
+Prereqs: Node 18+ and `pnpm`.
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
+pnpm install
 pnpm dev
-# or
-bun dev
+# Next.js dev server on :3000 and Socket.IO server on :3001
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open http://localhost:3000 and start a room. A local Socket.IO server runs alongside the app in dev.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 🔧 Environment
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Create `.env.local` from `env.example`:
 
-## Learn More
+```bash
+cp env.example .env.local
+```
 
-To learn more about Next.js, take a look at the following resources:
+- `NEXT_PUBLIC_SOCKET_URL` – Socket.IO server URL used in production.
+  - In development it falls back to `http://localhost:3001`.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 📦 Scripts
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- `pnpm dev` – Next.js + Socket.IO dev servers (Turbopack)
+- `pnpm build` – Next.js production build
+- `pnpm run server:build` – compile Socket.IO server (TypeScript)
+- `pnpm run server:prod` – run compiled Socket.IO server (`dist/prod.js`)
 
-## Deploy on Vercel
+## ☁️ Deploy
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Frontend (Next.js):
+- Deploy on Vercel. No special config needed.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Realtime server (Socket.IO):
+- Deploy on Railway/Fly/Render. Expose port `3001`.
+- Set `NEXT_PUBLIC_SOCKET_URL` in Vercel to your server URL (e.g. `https://your-railway-app.railway.app`).
+
+## 🧰 Tech stack
+
+- Next.js 15 (App Router) + React 19
+- Tailwind CSS v4
+- Framer Motion
+- Socket.IO (client + server)
+- TypeScript
+
+## 🗺️ Roadmap
+
+- Share presets for city/area filters
+- Persist rooms and results (DB)
+- Add reactions in chat and message editing
+- PWA install + offline cache
+- i18n (FR/EN)
+
+## 🤝 Contributing
+
+Contributions are welcome! If you’d like to help:
+
+1. Fork the repo and create a feature branch.
+2. Run `pnpm dev` and verify your changes.
+3. Open a PR with a clear description and screenshots.
+
+## ⭐ Support
+
+If you like this project, please star the repo and share it with your team.
