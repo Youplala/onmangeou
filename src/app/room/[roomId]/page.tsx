@@ -16,32 +16,9 @@ import VotingButtons from '@/components/room/VotingButtons';
 import Leaderboard from '@/components/room/Leaderboard';
 import PlayersList from '@/components/room/PlayersList';
 import Chat from '@/components/room/Chat';
+import type { Restaurant } from '@/types/restaurant';
 
 // --- TYPES ---
-interface Restaurant {
-  id: string;
-  name: string;
-  description: string;
-  rating: number;
-  reviewCount: number;
-  categories: string[];
-  mainCategory: string;
-  address: string;
-  phone: string;
-  website: string;
-  featuredImage: string;
-  workdayTiming: string;
-  closedOn: string;
-  isTemporarilyClosed: boolean;
-  reviewKeywords: string[];
-  googleMapsLink: string;
-  competitors: Array<{
-    name: string;
-    link: string;
-    reviews: string;
-  }>;
-  isSpendingOnAds: boolean;
-}
 
 interface User {
   id: string;
@@ -98,6 +75,9 @@ export default function RoomPage() {
   const [unreadCount, setUnreadCount] = useState(0);
   const showChatRef = useRef(false);
   const [isVotingAnimation, setIsVotingAnimation] = useState(false);
+  const [roomStartTime, setRoomStartTime] = useState<Date | null>(null);
+  const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
+  const [hasLoadedRestaurants, setHasLoadedRestaurants] = useState(false);
 
   // Sound notification function
   const playNotificationSound = () => {
@@ -134,41 +114,6 @@ export default function RoomPage() {
     if (storedName) setUserName(storedName);
     else window.location.href = `/join/${params.roomId}`;
 
-    const calculateTimeLeft = () => {
-      // Get current time in Paris timezone
-      const now = new Date();
-      const parisTime = new Date(now.toLocaleString("en-US", { timeZone: "Europe/Paris" }));
-      
-      // Create noon time in Paris timezone
-      const noon = new Date(parisTime);
-      noon.setHours(12, 0, 0, 0);
-
-      const diff = noon.getTime() - parisTime.getTime();
-      
-      if (diff <= 0) {
-        return { display: "Le vote est terminé !", isOver: true };
-      }
-
-      const hours = Math.floor(diff / (1000 * 60 * 60));
-      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-
-      if (hours > 0) return { display: `Tirage au sort dans ${hours}h ${minutes}m`, isOver: false };
-      if (minutes > 0) return { display: `Tirage au sort dans ${minutes}m ${seconds}s`, isOver: false };
-      if (seconds > 0) return { display: `Tirage au sort dans ${seconds}s`, isOver: false };
-      return { display: "Tirage au sort imminent !", isOver: false };
-    };
-
-    const timer = setInterval(() => {
-      const { display, isOver } = calculateTimeLeft();
-      setTimeLeft(display);
-      // Auto-finish the vote when time is up in production
-      if (isOver && process.env.NODE_ENV === 'production') {
-        setIsVotingFinished(true);
-        clearInterval(timer);
-      }
-    }, 1000);
-
     const socket = io(process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:3001');
     socketRef.current = socket;
 
@@ -176,14 +121,37 @@ export default function RoomPage() {
       socket.emit('join-room', { roomId: params.roomId, userName: storedName });
     }
 
-    socket.on('room-state', ({ users, chatHistory, leaderboard }) => {
+    socket.on('room-state', ({ users, chatHistory, leaderboard, roomStartTime: serverRoomStartTime, restaurantSet }) => {
       setUsers(users);
       setMessages(chatHistory);
       setLeaderboard(leaderboard);
+      
+      if (serverRoomStartTime) {
+        setRoomStartTime(new Date(serverRoomStartTime));
+      } else {
+        const now = new Date();
+        setRoomStartTime(now);
+        socket.emit('set-room-start-time', { roomId: params.roomId, startTime: now.toISOString() });
+      }
+      
+      if (restaurantSet) {
+        console.log('Received restaurant set from room-state:', restaurantSet.length);
+        setRestaurants(restaurantSet);
+        setHasLoadedRestaurants(true);
+      } else if (!hasLoadedRestaurants) {
+        loadRestaurantsForRoom();
+      }
+      
       const currentUserData = users.find((u: User) => u.name === storedName);
       if (currentUserData) {
         setCurrentUser(currentUserData);
       }
+    });
+
+    socket.on('restaurant-set-update', (restaurantSet) => {
+      console.log('Received restaurant set update:', restaurantSet.length);
+      setRestaurants(restaurantSet);
+      setHasLoadedRestaurants(true);
     });
 
     socket.on('user-joined', (userList: User[]) => {
@@ -229,10 +197,33 @@ export default function RoomPage() {
     });
 
     return () => {
-      clearInterval(timer);
+      socket.off('restaurant-set-update');
       socket.disconnect();
     };
   }, [params.roomId]);
+
+  // Timer effect - starts when roomStartTime is set
+  useEffect(() => {
+    if (!roomStartTime) return;
+
+    const timer = setInterval(() => {
+      const { display, isOver } = calculateTimeLeft();
+      setTimeLeft(display);
+      if (isOver) {
+        setIsVotingFinished(true);
+        clearInterval(timer);
+      }
+    }, 1000);
+
+    // Initial calculation
+    const { display, isOver } = calculateTimeLeft();
+    setTimeLeft(display);
+    if (isOver) {
+      setIsVotingFinished(true);
+    }
+
+    return () => clearInterval(timer);
+  }, [roomStartTime]);
 
   useEffect(() => {
     const scrollToBottom = (ref: React.RefObject<HTMLDivElement | null>) => {
@@ -261,6 +252,57 @@ export default function RoomPage() {
     setTimeout(() => setIsInviteCopied(false), 2000);
   };
 
+  const calculateTimeLeft = () => {
+    if (!roomStartTime) {
+      return { display: "Initialisation...", isOver: false, progress: 0 };
+    }
+
+    const now = new Date();
+    const endTime = new Date(roomStartTime.getTime() + 10 * 60 * 1000); // 10 minutes from start
+    const diff = endTime.getTime() - now.getTime();
+    
+    if (diff <= 0) {
+      return { display: "Le vote est terminé !", isOver: true, progress: 100 };
+    }
+
+    const totalDuration = 10 * 60 * 1000; // 10 minutes in ms
+    const elapsed = now.getTime() - roomStartTime.getTime();
+    const progress = Math.min(100, Math.max(0, (elapsed / totalDuration) * 100));
+
+    const minutes = Math.floor(diff / (1000 * 60));
+    const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+    if (minutes > 0) return { display: `Tirage au sort dans ${minutes}m ${seconds}s`, isOver: false, progress };
+    if (seconds > 0) return { display: `Tirage au sort dans ${seconds}s`, isOver: false, progress };
+    return { display: "Tirage au sort imminent !", isOver: false, progress };
+  };
+
+  const loadRestaurantsForRoom = async () => {
+    if (hasLoadedRestaurants || !socketRef.current) return;
+    
+    setHasLoadedRestaurants(true);
+    try {
+      const urlParams = new URLSearchParams({
+        action: 'random',
+        count: '10',
+        minRating: '4',
+        isOpen: 'true'
+      });
+
+      const response = await fetch(`/api/restaurants?${urlParams}`);
+      if (!response.ok) throw new Error('Failed to fetch restaurants');
+      
+      const data = await response.json();
+      console.log('Loading restaurants for room:', data.length);
+      
+      // Share this restaurant set with all users in the room
+      socketRef.current.emit('set-restaurant-set', { roomId: params.roomId, restaurantSet: data });
+    } catch (error) {
+      console.error('Error loading restaurants for room:', error);
+      setHasLoadedRestaurants(false);
+    }
+  };
+
 
 
   const handleVote = (restaurantName: string, vote: 'OUI' | 'NON') => {
@@ -272,13 +314,12 @@ export default function RoomPage() {
       return;
     }
     
-    // Prevent voting after noon in production
-    if (process.env.NODE_ENV === 'production') {
+    // Prevent voting after timer expires
+    if (roomStartTime) {
       const now = new Date();
-      const noon = new Date(now);
-      noon.setHours(12, 0, 0, 0);
-      if (now >= noon) {
-        console.log('Voting is closed - deadline has passed');
+      const endTime = new Date(roomStartTime.getTime() + 10 * 60 * 1000);
+      if (now >= endTime) {
+        console.log('Voting is closed - timer has expired');
         return;
       }
     }
@@ -304,7 +345,13 @@ export default function RoomPage() {
 
   // --- RENDER ---
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-300 via-rose-300 to-pink-400 font-sans">
+    <div className="min-h-screen bg-gradient-to-br from-orange-300 via-rose-300 to-pink-400 font-sans relative overflow-hidden">
+      {/* Animated background elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-white/15 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-yellow-300/20 rounded-full blur-3xl animate-pulse" style={{animationDelay: '2s'}}></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-orange-300/15 rounded-full blur-3xl animate-pulse" style={{animationDelay: '4s'}}></div>
+      </div>
       <RoomHeader
         isHeaderCollapsed={isHeaderCollapsed}
         setIsHeaderCollapsed={setIsHeaderCollapsed}
@@ -330,24 +377,25 @@ export default function RoomPage() {
 
         {/* Left Panel: Leaderboard & Users */}
         <div className="lg:w-1/4 order-2 lg:order-1 flex flex-col gap-6">
-          <div className="rounded-2xl bg-white/60 backdrop-blur ring-1 ring-black/10 shadow-xl p-4">
+          <div className="rounded-3xl bg-white/70 backdrop-blur-xl ring-1 ring-white/20 shadow-2xl p-6 border border-white/30">
             <Leaderboard leaderboard={leaderboard} isHidden={!isVotingFinished} />
           </div>
-          <div className="rounded-2xl bg-white/60 backdrop-blur ring-1 ring-black/10 shadow-xl p-4">
+          <div className="rounded-3xl bg-white/70 backdrop-blur-xl ring-1 ring-white/20 shadow-2xl p-6 border border-white/30">
             <PlayersList users={users} mockRestaurantsLength={10} />
           </div>
         </div>
 
         {/* Center Panel: Swipe Cards */}
         <div className="lg:w-1/3 order-1 lg:order-2">
-          <div className="relative overflow-hidden rounded-3xl bg-white/60 backdrop-blur-xl ring-1 ring-black/10 shadow-2xl p-4 md:p-6">
-            <div className="absolute inset-0 -z-10 opacity-40 bg-[radial-gradient(600px_circle_at_0%_0%,#ffffff40,transparent_40%),radial-gradient(800px_circle_at_100%_0%,#ffffff40,transparent_45%)]" />
+          <div className="relative overflow-hidden rounded-3xl bg-white/70 backdrop-blur-xl ring-1 ring-white/20 shadow-2xl p-6 md:p-8 border border-white/30">
+            <div className="absolute inset-0 -z-10 opacity-50 bg-[radial-gradient(600px_circle_at_0%_0%,#ffffff60,transparent_40%),radial-gradient(800px_circle_at_100%_0%,#ffffff60,transparent_45%)]" />
             <div className="flex flex-col items-center">
-              <Timer timeLeft={timeLeft} />
+              <Timer timeLeft={timeLeft} progress={calculateTimeLeft().progress} />
               <AnimatePresence>
               {!isVotingFinished ? (
                 !hasOptedOut && (!currentUser || !currentUser.hasOptedOut) ? (
                   <RestaurantSelector
+                    restaurants={restaurants}
                     socket={socketRef.current}
                     userName={userName || ''}
                     roomId={params.roomId as string}
@@ -392,8 +440,8 @@ export default function RoomPage() {
         </div>
 
         <div className="lg:w-1/3 order-3 lg:order-3">
-          <div className="relative overflow-hidden rounded-3xl bg-white/60 backdrop-blur-xl ring-1 ring-black/10 shadow-2xl p-4 md:p-6">
-            <div className="absolute inset-0 -z-10 opacity-40 bg-[radial-gradient(600px_circle_at_0%_0%,#ffffff40,transparent_40%),radial-gradient(800px_circle_at_100%_0%,#ffffff40,transparent_45%)]" />
+          <div className="relative overflow-hidden rounded-3xl bg-white/70 backdrop-blur-xl ring-1 ring-white/20 shadow-2xl p-6 md:p-8 border border-white/30">
+            <div className="absolute inset-0 -z-10 opacity-50 bg-[radial-gradient(600px_circle_at_0%_0%,#ffffff60,transparent_40%),radial-gradient(800px_circle_at_100%_0%,#ffffff60,transparent_45%)]" />
             <Chat
               messages={messages}
               users={users}

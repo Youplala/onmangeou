@@ -1,39 +1,9 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import type { Restaurant } from '@/types/restaurant';
 
 // --- TYPES ---
-interface Restaurant {
-  id: string;
-  name: string;
-  description: string;
-  rating: number;
-  reviewCount: number;
-  categories: string[];
-  mainCategory: string;
-  address: string;
-  phone: string;
-  website: string;
-  featuredImage: string;
-  workdayTiming: string;
-  closedOn: string[];
-  isTemporarilyClosed: boolean;
-  reviewKeywords: string[];
-  googleMapsLink: string;
-  competitors: Array<{
-    name: string;
-    link: string;
-    reviews: string;
-    rating: number;
-    mainCategory: string;
-  }>;
-  isSpendingOnAds: boolean;
-  priceRange: string;
-  coordinates?: {
-    latitude: number;
-    longitude: number;
-  };
-}
 
 interface RestaurantCardProps {
   restaurant: Restaurant;
@@ -103,10 +73,10 @@ export default function RestaurantCard({
           <div className="flex items-center justify-center gap-2 mb-3">
             <div className="flex items-center bg-yellow-50 px-3 py-1 rounded-full">
               <span className="text-yellow-500 text-lg">⭐</span>
-              <span className="font-bold text-gray-800 ml-1 text-lg">{restaurant.rating.toFixed(1)}</span>
+              <span className="font-bold text-gray-800 ml-1 text-lg">{restaurant.rating?.toFixed(1) || '0.0'}</span>
             </div>
             <span className="text-gray-400">•</span>
-            <span className="text-gray-700 font-medium">{restaurant.reviewCount} avis</span>
+            <span className="text-gray-700 font-medium">{restaurant.reviewCount || 0} avis</span>
           </div>
           
           {/* Category + Price Range on one line */}
@@ -123,7 +93,7 @@ export default function RestaurantCard({
           
           {/* Keywords - limited to save space */}
           <div className="flex flex-wrap justify-center gap-2 mb-3">
-            {restaurant.reviewKeywords.length > 0 ? (
+            {restaurant.reviewKeywords && restaurant.reviewKeywords.length > 0 ? (
               restaurant.reviewKeywords.slice(0, 2).map((keyword, index) => (
                 <span key={index} className="px-3 py-1 bg-blue-50 text-blue-700 text-xs font-medium rounded-full border border-blue-100">
                   {keyword}
@@ -222,9 +192,9 @@ export default function RestaurantCard({
                   <div className="flex items-center gap-2 mb-4">
                     <div className="flex items-center bg-yellow-50 px-3 py-1 rounded-full">
                       <span className="text-yellow-500">⭐</span>
-                      <span className="font-bold text-gray-800 ml-1">{restaurant.rating.toFixed(1)}</span>
+                      <span className="font-bold text-gray-800 ml-1">{restaurant.rating?.toFixed(1) || '0.0'}</span>
                     </div>
-                    <span className="text-gray-600">{restaurant.reviewCount} avis</span>
+                    <span className="text-gray-600">{restaurant.reviewCount || 0} avis</span>
                     {restaurant.priceRange && (
                       <div className="text-sm font-bold text-white bg-gradient-to-r from-green-500 to-emerald-600 px-3 py-1 rounded-full">
                         💰 {restaurant.priceRange}
@@ -236,13 +206,17 @@ export default function RestaurantCard({
                     {restaurant.mainCategory}
                   </div>
                   
-                  <p className="text-gray-700 text-sm leading-relaxed mb-4">
-                    {restaurant.description}
-                  </p>
+                  {restaurant.description && (
+                    <p className="text-gray-700 text-sm leading-relaxed mb-4">
+                      {restaurant.description}
+                    </p>
+                  )}
                   
-                  <p className="text-gray-600 text-xs mb-4">{restaurant.address}</p>
+                  {restaurant.address && (
+                    <p className="text-gray-600 text-xs mb-4">{restaurant.address}</p>
+                  )}
                   
-                  {restaurant.reviewKeywords.length > 0 && (
+                  {restaurant.reviewKeywords && restaurant.reviewKeywords.length > 0 && (
                     <div className="flex flex-wrap gap-2 mb-4">
                       {restaurant.reviewKeywords.slice(0, 5).map((keyword, index) => (
                         <span key={index} className="px-2 py-1 bg-blue-50 text-blue-700 text-xs rounded-full border border-blue-100">

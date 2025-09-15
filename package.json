@@ -4,10 +4,10 @@
   "private": true,
   "scripts": {
     "dev": "concurrently \"next dev --turbopack\" \"pnpm run server\"",
-    "server": "ts-node src/server/index.ts",
+    "server": "tsx src/server/index.ts",
     "server:build": "tsc --project tsconfig.server.json",
     "server:prod": "node dist/prod.js",
-    "build": "NEXT_FONT_IGNORE_FETCH_ERRORS=1 next build",
+    "build": "next build",
     "start": "next start",
     "lint": "biome check",
     "format": "biome format --write"
@@ -22,6 +22,7 @@
     "react-dom": "19.1.0",
     "socket.io": "^4.8.1",
     "socket.io-client": "^4.8.1",
+    "tsx": "^4.20.5",
     "uuid": "^11.1.0"
   },
   "devDependencies": {

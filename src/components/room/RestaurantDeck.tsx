@@ -1,39 +1,9 @@
 import { motion, useMotionValue, useTransform, animate } from 'framer-motion';
 import { useEffect, useImperativeHandle, forwardRef, useRef, useState, useCallback } from 'react';
 import RestaurantCard from './RestaurantCard';
+import type { Restaurant } from '@/types/restaurant';
 
 // --- TYPES ---
-interface Restaurant {
-  id: string;
-  name: string;
-  description: string;
-  rating: number;
-  reviewCount: number;
-  categories: string[];
-  mainCategory: string;
-  address: string;
-  phone: string;
-  website: string;
-  featuredImage: string;
-  workdayTiming: string;
-  closedOn: string[];
-  isTemporarilyClosed: boolean;
-  reviewKeywords: string[];
-  googleMapsLink: string;
-  competitors: Array<{
-    name: string;
-    link: string;
-    reviews: string;
-    rating: number;
-    mainCategory: string;
-  }>;
-  isSpendingOnAds: boolean;
-  priceRange: string;
-  coordinates?: {
-    latitude: number;
-    longitude: number;
-  };
-}
 
 interface RestaurantDeckProps {
   restaurants: Restaurant[];

@@ -33,8 +33,14 @@ export default function RoomHeader({
           <div className="hidden lg:flex items-center gap-4">
             <button
               onClick={handleInviteCopy}
-              className={`rounded-xl px-5 py-2.5 text-sm font-semibold text-white shadow transition bg-gradient-to-r from-blue-500 to-indigo-600 hover:opacity-95 ${isInviteCopied ? 'from-emerald-500 to-green-600' : ''}`}>
-              {isInviteCopied ? '✅ Lien copié' : '➕ Inviter la team'}
+              className={`relative rounded-xl px-6 py-3 text-sm font-bold text-white shadow-lg transform transition-all duration-200 hover:scale-105 hover:shadow-xl active:scale-95 ${
+                isInviteCopied 
+                  ? 'bg-gradient-to-br from-emerald-400 via-emerald-500 to-emerald-600 shadow-emerald-500/25' 
+                  : 'bg-gradient-to-br from-blue-400 via-blue-500 to-indigo-600 shadow-blue-500/25 hover:from-blue-500 hover:via-blue-600 hover:to-indigo-700'
+              } before:absolute before:inset-0 before:rounded-xl before:bg-gradient-to-br before:from-white/20 before:to-transparent before:opacity-0 hover:before:opacity-100 before:transition-opacity`}>
+              <span className="relative z-10">
+                {isInviteCopied ? '✅ Lien copié' : '➕ Inviter la team'}
+              </span>
             </button>
             <button
               onClick={() => setHasOptedOut(true)}
@@ -65,8 +71,14 @@ export default function RoomHeader({
         <div className={`lg:hidden flex flex-wrap items-center justify-center gap-3 mt-3 ${isHeaderCollapsed ? 'hidden' : 'flex'}`}>
           <button
             onClick={handleInviteCopy}
-            className={`rounded-xl px-4 py-2 text-sm font-semibold text-white shadow transition bg-gradient-to-r from-blue-500 to-indigo-600 hover:opacity-95 ${isInviteCopied ? 'from-emerald-500 to-green-600' : ''}`}>
-            {isInviteCopied ? '✅ Lien copié' : '➕ Inviter la team'}
+            className={`relative rounded-xl px-5 py-2.5 text-sm font-bold text-white shadow-lg transform transition-all duration-200 hover:scale-105 hover:shadow-xl active:scale-95 ${
+              isInviteCopied 
+                ? 'bg-gradient-to-br from-emerald-400 via-emerald-500 to-emerald-600 shadow-emerald-500/25' 
+                : 'bg-gradient-to-br from-blue-400 via-blue-500 to-indigo-600 shadow-blue-500/25 hover:from-blue-500 hover:via-blue-600 hover:to-indigo-700'
+            } before:absolute before:inset-0 before:rounded-xl before:bg-gradient-to-br before:from-white/20 before:to-transparent before:opacity-0 hover:before:opacity-100 before:transition-opacity`}>
+            <span className="relative z-10">
+              {isInviteCopied ? '✅ Lien copié' : '➕ Inviter la team'}
+            </span>
           </button>
           <button
             onClick={() => setHasOptedOut(true)}
